@@ -1,0 +1,16 @@
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.so
+
+# Environment variables
+.env
+
+# React build
+build/
+node_modules/
+*.log
+
+# macOS
+.DS_Store

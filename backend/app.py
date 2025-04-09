@@ -1,9 +1,16 @@
-# Import necessary libraries
-from flask import Flask, jsonify, request  # Core Flask tools for building the web server and handling requests
-from flask_cors import CORS  # Allows cross-origin requests (e.g., from your React frontend)
-import pandas as pd  # Library used to handle the CSV file like a database
+import os
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+from dotenv import load_dotenv
+import csv
 
-# Create Flask application instance
+load_dotenv()  # Load environment variables from .env
+
+app = Flask(__name__)
+CORS(app)
+
+DATA_FILE = os.getenv("CSV_FILE", "data.csv")
+
 app = Flask(__name__)
 
 # Enable CORS so frontend apps (like React on another port) can make requests to this backend
