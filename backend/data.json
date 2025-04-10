@@ -1,0 +1,20 @@
+{
+    "id": 0,
+    "timestamp": "2025-04-08T15:30:00Z",
+    "name": "Alex",
+    "money": 13470,
+    "recentPurchases": [
+        {
+            "purchaseId": 0,
+            "timestamp": "2025-05-08T15:30:00Z",
+            "storeName": "7/11",
+            "moneySpent": 7.11
+        },
+        {
+            "purchaseId": 1,
+            "timestamp": "2025-05-08T18:30:00Z",
+            "storeName": "Starbucks",
+            "moneySpent": 4.34
+        }
+    ]
+}

@@ -1,61 +1,94 @@
-# Import necessary libraries
-from flask import Flask, jsonify, request  # Core Flask tools for building the web server and handling requests
-from flask_cors import CORS  # Allows cross-origin requests (e.g., from your React frontend)
-import pandas as pd  # Library used to handle the CSV file like a database
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+import json
+import os
+from datetime import datetime
 
-# Create Flask application instance
 app = Flask(__name__)
-
-# Enable CORS so frontend apps (like React on another port) can make requests to this backend
 CORS(app)
 
-# Define the name of the CSV file that serves as our lightweight "database"
-DATA_FILE = 'data.csv'
+# Define the JSON file acting as our "database"
+DATA_FILE = 'data.json'
+
+# If the file doesn't exist yet, create it with an empty list
+if not os.path.exists(DATA_FILE):
+    with open(DATA_FILE, 'w') as f:
+        json.dump([], f)
 
 
 @app.route('/api/data', methods=['GET'])
 def get_data():
     """
-    Handle GET requests to /api/data.
-    Reads the data from the CSV file and returns it as a JSON list.
-    This allows the frontend to fetch all existing entries.
+    Reads the data from the JSON file and returns it as a JSON list.
     """
-    df = pd.read_csv(DATA_FILE)
-    return df.to_json(orient='records')
+    with open(DATA_FILE, 'r') as f:
+        data = json.load(f)
+    return jsonify(data)
 
 
 @app.route('/api/data', methods=['POST'])
 def add_data():
     """
-    Handle POST requests to /api/data.
-    Accepts a JSON object from the client (via request body),
-    converts it into a one-row DataFrame, and appends it to the CSV.
-    This allows the frontend to add new entries to the dataset.
+    Accepts a JSON object and appends it to the JSON file.
     """
-    new_entry = request.json  # Extract the incoming data from the POST request
-    df = pd.read_csv(DATA_FILE)  # Load the existing CSV data
+    new_entry = request.json  # Incoming data
 
-    # Convert the incoming JSON (dict) to a one-row DataFrame
-    new_row_df = pd.DataFrame([new_entry])
+    # Read existing data
+    with open(DATA_FILE, 'r') as f:
+        data = json.load(f)
 
-    # Concatenate the new row to the existing DataFrame
-    df = pd.concat([df, new_row_df], ignore_index=True)
+    new_entry['id'] = len(data) - 1
+    new_entry['timestamp'] = datetime.now().isoformat()
+    #Need to think about handling money and name... Should be sent by the front end.
 
-    # Save the updated DataFrame back to the CSV file
-    df.to_csv(DATA_FILE, index=False)
+    # Append the new entry
+    data.append(new_entry)
 
-    return jsonify({'message': 'Data added successfully'}), 201  # Return a success message with status code 201
+    # Write updated data back to the file
+    with open(DATA_FILE, 'w') as f:
+        json.dump(data, f, indent=4)
+
+    return jsonify({'message': 'Data added successfully'}), 201
+
+
+@app.route('/api/data/<int:user_id>', methods=['PATCH'])
+def record_purchase(id):
+    """
+    Accepts a JSON object and appends it to the JSON file.
+    """
+    new_entry = request.json  # Incoming data
+
+    # Pull existing data
+    with open(DATA_FILE, 'r') as f:
+        data = json.load(f)
+
+    # Append the new entry to the existing user's data
+    for user in data:
+        if user['id'] == id:
+            recent_purchases = user.get('recentPurchases', [])
+            new_entry['id'] = len(recent_purchases) 
+            new_entry['timestamp'] = datetime.now().isoformat()
+
+            recent_purchases.append(new_entry)
+
+            user['recentPurchases'] = (recent_purchases)
+            break
+    else:
+        #TODO: Insert logic to automatically create a user. Trouble is, a name has to be provided to make a new user...
+        return jsonify({'error': 'User not found.'}), 404
+        pass
+
+    # Write updated data back to the file (replaces everything)
+    with open(DATA_FILE, 'w') as f:
+        json.dump(data, f, indent=4)
+
+    return jsonify({'message': 'Purchase recorded successfully'}), 201
 
 
 @app.route('/')
 def home():
-    """
-    A simple home route for testing server status.
-    Returns a basic string message when visiting the root URL.
-    """
     return "Server is running!!"
 
 
-# If this script is run directly, start the Flask development server
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
