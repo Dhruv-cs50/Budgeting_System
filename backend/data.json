@@ -1,20 +1,50 @@
-{
-    "id": 0,
-    "timestamp": "2025-04-08T15:30:00Z",
-    "name": "Alex",
-    "money": 13470,
-    "recentPurchases": [
-        {
-            "purchaseId": 0,
-            "timestamp": "2025-05-08T15:30:00Z",
-            "storeName": "7/11",
-            "moneySpent": 7.11
-        },
-        {
-            "purchaseId": 1,
-            "timestamp": "2025-05-08T18:30:00Z",
-            "storeName": "Starbucks",
-            "moneySpent": 4.34
-        }
-    ]
-}
+[
+    {
+        "user_id": 0,
+        "timestamp": "2025-04-08T15:30:00Z",
+        "name": "Alex",
+        "money": 13009.54,
+        "recentPurchases": [
+            {
+                "purchaseId": 0,
+                "timestamp": "2025-05-08T15:30:00Z",
+                "storeName": "7/11",
+                "moneySpent": 7.11
+            },
+            {
+                "purchaseId": 1,
+                "timestamp": "2025-05-08T18:30:00Z",
+                "storeName": "Starbucks",
+                "moneySpent": 4.34
+            },
+            {
+                "storeName": "Macys",
+                "moneySpent": 135.23,
+                "purchaseId": 2,
+                "timestamp": "2025-04-10T11:23:28.317548"
+            }
+        ]
+    },
+    {
+        "name": "Oliver",
+        "money": 134235.24,
+        "user_id": 1,
+        "timestamp": "2025-04-10T11:26:48.497014",
+        "recentPurchases": [
+            {
+                "storeName": "Macys",
+                "moneySpent": 3225.23,
+                "purchaseId": 0,
+                "timestamp": "2025-04-10T11:30:02.739054"
+            }
+        ],
+        "recentDeposit": [
+            {
+                "depositName": "Savings deposit",
+                "moneyDeposited": 3225.23,
+                "depositId": 0,
+                "timestamp": "2025-04-10T11:39:54.940093"
+            }
+        ]
+    }
+]
