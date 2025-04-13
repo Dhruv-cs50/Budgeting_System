@@ -3,7 +3,7 @@
         "user_id": 0,
         "timestamp": "2025-04-08T15:30:00Z",
         "name": "Alex",
-        "money": 13009.54,
+        "money": 13310.23,
         "recentPurchases": [
             {
                 "purchaseId": 0,
@@ -22,6 +22,26 @@
                 "moneySpent": 135.23,
                 "purchaseId": 2,
                 "timestamp": "2025-04-10T11:23:28.317548"
+            }
+        ],
+        "recentDeposit": [
+            {
+                "depositName": "Savings deposit 2",
+                "moneyDeposited": 100.23,
+                "depositId": 0,
+                "timestamp": "2025-04-10T19:43:52.784999"
+            },
+            {
+                "depositName": "Savings deposit 2",
+                "moneyDeposited": 100.23,
+                "depositId": 1,
+                "timestamp": "2025-04-10T19:44:14.156796"
+            },
+            {
+                "depositName": "Savings deposit 2",
+                "moneyDeposited": 100.23,
+                "depositId": 2,
+                "timestamp": "2025-04-10T19:44:19.637725"
             }
         ]
     },

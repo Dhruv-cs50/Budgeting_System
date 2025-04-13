@@ -5,6 +5,18 @@ from datetime import datetime
 purchase_bp = Blueprint('purchases', __name__, url_prefix='/api/data/purchase')
 DATA_FILE = 'data.json'
 
+
+@purchase_bp.route('/<int:user_id>', methods=['GET'])
+def record_purchase(user_id):
+    new_entry = request.json
+
+    with open(DATA_FILE, 'r') as f:
+        data = json.load(f)
+
+    for user in data:
+        if user['user_id'] == user_id:
+            return jsonify(user['recentPurchases'])
+
 @purchase_bp.route('/<int:user_id>', methods=['PATCH'])
 def record_purchase(user_id):
     new_entry = request.json
