@@ -1,0 +1,84 @@
+🧠 Budgeting App Backend Overview
+
+This document provides a high-level explanation of how the backend works, how to run it, and how to interact with its different endpoints. The backend is built with Flask and uses a local JSON file as the database, managed entirely through a Python virtual environment.
+
+------------------------------------------------------------
+⚙️ How the Backend Works
+
+The backend manages three main resource types:
+- Users
+- Purchases
+- Deposits
+
+Each resource is managed via RESTful routes, using standard HTTP methods (GET, POST, PATCH, DELETE).
+
+All user data is stored in data.json, a structured list of user profiles, each containing their personal info, transaction history, and deposit history.
+
+📁 Project Structure:
+backend/
+├── app.py                 # Main entry point
+├── data.json              # JSON-based "database"
+├── routes/
+│   ├── user.py            # Handles user creation and retrieval
+│   ├── purchase.py        # Manages purchase logic (add/delete/view)
+│   └── deposit.py         # Manages deposit logic (add/delete/view)
+
+------------------------------------------------------------
+🧠 Summary of Endpoints
+
+👤 Users
+- POST /api/data                  → Create a new user
+- GET /api/data/<user_id>        → Fetch a user by ID
+
+💳 Purchases
+- GET /api/data/purchase/<user_id>     → Get user purchases
+- PATCH /api/data/purchase/<user_id>   → Add a purchase
+- DELETE /api/data/purchase/<user_id>  → Delete a purchase
+
+💰 Deposits
+- GET /api/data/deposit/<user_id>     → Get user deposits
+- PATCH /api/data/deposit/<user_id>   → Add a deposit
+- DELETE /api/data/deposit/<user_id>  → Delete a deposit
+
+All PATCH and DELETE routes expect a JSON body with the relevant fields (e.g., purchaseCost, depositId, etc.)
+
+------------------------------------------------------------
+▶️ Running the Backend
+
+The backend is fully encapsulated in a virtual environment.
+
+1. Activate the Virtual Environment
+Make sure you are in the backend directory, then run:
+    source venv/bin/activate      # macOS/Linux
+    venv\\Scripts\\activate       # Windows
+
+2. Start the Flask Server
+    python3 -m app
+
+The server will start at: http://127.0.0.1:5001
+
+3. Deactivate Virtual Environment
+    deactivate # macOS/Linux
+
+------------------------------------------------------------
+📦 Dependencies
+
+All dependencies are pre-installed in the virtual environment. You do not need to install anything manually if the venv is activated. If needed, here are the key packages:
+- Flask
+- Flask-CORS
+
+------------------------------------------------------------
+⚠️ Notes for the Team
+
+- All endpoints are public. There is no authentication or access control yet.
+- Any changes you make to data.json are saved permanently unless manually reverted.
+- Be careful not to corrupt the structure of the JSON file.
+
+------------------------------------------------------------
+🙌 Division of Work
+
+- Alex – Backend lead, core route logic, data validation
+- Andrian – Frontend data structuring and formatting
+- Dhruv – Request integration and endpoint testing
+
+Let Alex know if you need support hitting any route or understanding the data model.

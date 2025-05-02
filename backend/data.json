@@ -1,69 +1,101 @@
 [
     {
         "user_id": 0,
-        "timestamp": "2025-04-08T15:30:00Z",
-        "name": "Alex",
-        "money": 13310.23,
-        "recentPurchases": [
+        "timestamp": "2024-05-08T15:30:00Z",
+        "fullName": "Alex",
+        "email": "alex@example.com",
+        "dateOfBirth": "2000-01-01",
+        "occupation": "Student",
+        "monthlyIncome": 2000.0,
+        "phoneNumber": "123-456-7890",
+        "preferredCurrency": "USD",
+        "language": "English",
+        "currentBalance": 13410.46,
+        "totalMonthlyBudget": 1500.0,
+        "purchases": [
             {
                 "purchaseId": 0,
-                "timestamp": "2025-05-08T15:30:00Z",
-                "storeName": "7/11",
-                "moneySpent": 7.11
+                "name": "7/11",
+                "purchaseCategory": "Food & Drink",
+                "purchaseDate": "2025-05-08T15:30:00Z",
+                "purchaseCost": 7.11
             },
             {
                 "purchaseId": 1,
-                "timestamp": "2025-05-08T18:30:00Z",
-                "storeName": "Starbucks",
-                "moneySpent": 4.34
+                "name": "Starbucks",
+                "purchaseCategory": "Food & Drink",
+                "purchaseDate": "2025-05-08T18:30:00Z",
+                "purchaseCost": 4.34
             },
             {
-                "storeName": "Macys",
-                "moneySpent": 135.23,
                 "purchaseId": 2,
-                "timestamp": "2025-04-10T11:23:28.317548"
+                "name": "Macys",
+                "purchaseCategory": "Shopping",
+                "purchaseDate": "2025-04-10T11:23:28.317548",
+                "purchaseCost": 135.23
             }
         ],
-        "recentDeposit": [
+        "deposits": [
             {
-                "depositName": "Savings deposit 2",
-                "moneyDeposited": 100.23,
                 "depositId": 0,
-                "timestamp": "2025-04-10T19:43:52.784999"
-            },
+                "name": "Deposit Test",
+                "depositCategory": "Savings",
+                "depositDate": "2025-04-10T11:30:02.739054",
+                "depositAmount": 3225.23
+            }
+        ],
+        "financialGoals": [
             {
-                "depositName": "Savings deposit 2",
-                "moneyDeposited": 100.23,
-                "depositId": 1,
-                "timestamp": "2025-04-10T19:44:14.156796"
-            },
-            {
-                "depositName": "Savings deposit 2",
-                "moneyDeposited": 100.23,
-                "depositId": 2,
-                "timestamp": "2025-04-10T19:44:19.637725"
+                "goalId": 0,
+                "title": "Emergency Fund",
+                "currentAmount": 500.0,
+                "targetAmount": 1000.0,
+                "targetDate": "2025-12-31",
+                "savingsCategory": "Emergency",
+                "percentageCompleted": 50
             }
         ]
     },
     {
-        "name": "Oliver",
-        "money": 134235.24,
         "user_id": 1,
-        "timestamp": "2025-04-10T11:26:48.497014",
-        "recentPurchases": [
+        "timestamp": "2024-06-08T15:30:00Z",
+        "fullName": "Oliver",
+        "email": "oliver@example.com",
+        "dateOfBirth": "1998-05-15",
+        "occupation": "Engineer",
+        "monthlyIncome": 6000.0,
+        "phoneNumber": "321-654-0987",
+        "preferredCurrency": "USD",
+        "language": "English",
+        "currentBalance": 134235.24,
+        "totalMonthlyBudget": 5000.0,
+        "purchases": [
             {
-                "storeName": "Macys",
-                "moneySpent": 3225.23,
                 "purchaseId": 0,
-                "timestamp": "2025-04-10T11:30:02.739054"
+                "name": "Macys",
+                "purchaseCategory": "Shopping",
+                "purchaseDate": "2025-04-10T11:30:02.739054",
+                "purchaseCost": 3225.23
             }
         ],
-        "recentDeposit": [
+        "deposits": [
             {
-                "depositName": "Savings deposit",
-                "moneyDeposited": 3225.23,
                 "depositId": 0,
-                "timestamp": "2025-04-10T11:39:54.940093"
+                "name": "Deposit1",
+                "depositCategory": "Savings",
+                "depositDate": "2025-04-10T11:30:02.739054",
+                "depositAmount": 3225.23
+            }
+        ],
+        "financialGoals": [
+            {
+                "goalId": 0,
+                "title": "Vacation Fund",
+                "currentAmount": 3000.0,
+                "targetAmount": 5000.0,
+                "targetDate": "2025-08-01",
+                "savingsCategory": "Travel",
+                "percentageCompleted": 60
             }
         ]
     }
