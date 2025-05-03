@@ -7,11 +7,19 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import CustomInput from '../components/common/CustomInput';
 import CustomButton from '../components/common/CustomButton';
 import { colors, spacing, typography } from '../theme/colors';
+
+// Test account information
+const TEST_ACCOUNT = {
+  name: 'Test User',
+  email: 'test@example.com',
+  password: 'password123'
+};
 
 const RegisterScreen = ({ navigation }) => {
   const [formData, setFormData] = useState({
@@ -65,10 +73,46 @@ const RegisterScreen = ({ navigation }) => {
     }
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (validateForm()) {
-      navigation.navigate('MainTabs');
+      const dataToSend = {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+      };
+
+      try {
+        const response = await fetch('http://localhost:5001/api/data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(dataToSend),
+        });
+
+        if (response.ok) {
+          Alert.alert(
+            'Registration Successful',
+            'Your account has been created successfully!',
+            [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
+          );
+        } else {
+          const errorData = await response.json();
+          Alert.alert('Error', errorData.message || 'Failed to register. Please try again.');
+        }
+      } catch (error) {
+        Alert.alert('Network Error', 'Unable to connect to the server. Please try again later.');
+      }
     }
+  };
+
+  const handleUseTestAccount = () => {
+    setFormData({
+      name: TEST_ACCOUNT.name,
+      email: TEST_ACCOUNT.email,
+      password: TEST_ACCOUNT.password,
+      confirmPassword: TEST_ACCOUNT.password,
+    });
   };
 
   return (
@@ -130,6 +174,13 @@ const RegisterScreen = ({ navigation }) => {
               style={styles.registerButton}
             />
 
+            <TouchableOpacity
+              style={styles.testAccountButton}
+              onPress={handleUseTestAccount}
+            >
+              <Text style={styles.testAccountText}>Use Test Account</Text>
+            </TouchableOpacity>
+
             <View style={styles.loginContainer}>
               <Text style={styles.loginText}>Already have an account? </Text>
               <TouchableOpacity onPress={() => navigation.navigate('Login')}>
@@ -173,7 +224,18 @@ const styles = StyleSheet.create({
   },
   registerButton: {
     marginTop: spacing.xl,
+    marginBottom: spacing.md,
+  },
+  testAccountButton: {
+    backgroundColor: colors.background.main,
+    padding: spacing.md,
+    borderRadius: spacing.md,
+    alignItems: 'center',
     marginBottom: spacing.xl,
+  },
+  testAccountText: {
+    color: colors.text.secondary,
+    fontSize: typography.body.fontSize,
   },
   loginContainer: {
     flexDirection: 'row',

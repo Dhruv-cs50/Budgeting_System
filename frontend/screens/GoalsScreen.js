@@ -79,15 +79,40 @@ const GoalsScreen = () => {
     setDatePickerVisible(false);
   };
 
-  const handleAddGoal = () => {
-    // Handle goal creation here
-    setIsAddingGoal(false);
-    setNewGoal({
-      title: '',
-      targetAmount: '',
-      targetDate: new Date(),
-      category: '',
-    });
+  const handleAddGoal = async () => {
+    const dataToSend = {
+      title: newGoal.title,
+      targetAmount: newGoal.targetAmount,
+      targetDate: newGoal.targetDate.toISOString(), 
+      category: newGoal.category,
+    };
+
+    try {
+      const response = await fetch('http://localhost:5000/api/goals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataToSend),
+      });
+
+      if (response.ok) {
+        // Success: reset the form and exit add mode
+        setIsAddingGoal(false);
+        setNewGoal({
+          title: '',
+          targetAmount: '',
+          targetDate: new Date(),
+          category: '',
+        });
+      } else {
+        // Handle server errors
+        const errorData = await response.json();
+        alert('Error: ' + (errorData.message || 'Failed to add goal.'));
+      }
+    } catch (error) {
+      alert('Network error: ' + error.message);
+    }
   };
 
   const renderGoalCard = (goal) => {

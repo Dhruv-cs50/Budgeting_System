@@ -14,29 +14,118 @@ import CustomInput from '../components/common/CustomInput';
 import CustomButton from '../components/common/CustomButton';
 import { colors, spacing, typography } from '../theme/colors';
 
-const ProfileScreen = () => {
+const ProfileScreen = ({ navigation }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    fullName: 'John Doe',
-    email: 'john.doe@example.com',
-    dateOfBirth: '1990-01-01',
-    occupation: 'Software Engineer',
-    monthlyIncome: '5000',
-    phoneNumber: '+1 234 567 8900',
-    address: '123 Main Street, City, Country',
-    currency: 'USD',
-    language: 'English',
+    firstName: '',
+    email: '',
+    dob: '',
+    occupation: '',
+    monthlyIncome: '',
+    phoneNumber: '',
+    address: '',
+    preferredCurrency: '',
+    language: '',
   });
+  const [errors, setErrors] = useState({});
+
+  const validateForm = () => {
+    const newErrors = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^\+?[\d\s-]{10,}$/;
+
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'First name is required';
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!emailRegex.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email';
+    }
+
+    if (!formData.dob) {
+      newErrors.dob = 'Date of birth is required';
+    }
+
+    if (!formData.occupation.trim()) {
+      newErrors.occupation = 'Occupation is required';
+    }
+
+    if (!formData.monthlyIncome) {
+      newErrors.monthlyIncome = 'Monthly income is required';
+    } else if (isNaN(formData.monthlyIncome)) {
+      newErrors.monthlyIncome = 'Monthly income must be a number';
+    }
+
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = 'Phone number is required';
+    } else if (!phoneRegex.test(formData.phoneNumber)) {
+      newErrors.phoneNumber = 'Please enter a valid phone number';
+    }
+
+    if (!formData.address.trim()) {
+      newErrors.address = 'Address is required';
+    }
+
+    if (!formData.preferredCurrency) {
+      newErrors.preferredCurrency = 'Preferred currency is required';
+    }
+
+    if (!formData.language) {
+      newErrors.language = 'Language is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,
     }));
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: '',
+      }));
+    }
   };
 
-  const handleSave = () => {
-    setIsEditing(false);
+  const handleSubmit = async () => {
+    if (validateForm()) {
+      const dataToSend = {
+        firstName: formData.firstName,
+        email: formData.email,
+        dob: formData.dob,
+        occupation: formData.occupation,
+        monthlyIncome: parseFloat(formData.monthlyIncome),
+        phoneNumber: formData.phoneNumber,
+        address: formData.address,
+        preferredCurrency: formData.preferredCurrency,
+        language: formData.language,
+      };
+
+      try {
+        const response = await fetch('http://localhost:5001/api/profile', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(dataToSend),
+        });
+
+        if (response.ok) {
+          navigation.navigate('MainTabs');
+        } else {
+          const errorData = await response.json();
+          alert('Error: ' + (errorData.message || 'Failed to update profile.'));
+        }
+      } catch (error) {
+        alert('Network error: ' + error.message);
+      }
+    }
   };
 
   const renderField = (label, field, placeholder, keyboardType = 'default') => (
@@ -48,6 +137,7 @@ const ProfileScreen = () => {
           onChangeText={(value) => handleChange(field, value)}
           placeholder={placeholder}
           keyboardType={keyboardType}
+          error={errors[field]}
         />
       ) : (
         <>
@@ -70,6 +160,7 @@ const ProfileScreen = () => {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
             <Text style={styles.title}>Profile</Text>
+            <Text style={styles.subtitle}>Update your personal information</Text>
             <TouchableOpacity
               onPress={() => setIsEditing(!isEditing)}
               style={styles.editButton}
@@ -93,22 +184,22 @@ const ProfileScreen = () => {
           </View>
 
           <View style={styles.form}>
-            {renderField('Full Name', 'fullName', 'Enter your full name')}
+            {renderField('First Name', 'firstName', 'Enter your first name')}
             {renderField('Email', 'email', 'Enter your email', 'email-address')}
-            {renderField('Date of Birth', 'dateOfBirth', 'YYYY-MM-DD')}
+            {renderField('Date of Birth', 'dob', 'YYYY-MM-DD')}
             {renderField('Occupation', 'occupation', 'Enter your occupation')}
             {renderField('Monthly Income', 'monthlyIncome', 'Enter your monthly income', 'numeric')}
             {renderField('Phone Number', 'phoneNumber', 'Enter your phone number', 'phone-pad')}
             {renderField('Address', 'address', 'Enter your address')}
-            {renderField('Preferred Currency', 'currency', 'Select your currency')}
-            {renderField('Language', 'language', 'Select your language')}
+            {renderField('Preferred Currency', 'preferredCurrency', 'Enter your preferred currency')}
+            {renderField('Language', 'language', 'Enter your preferred language')}
 
             {isEditing && (
               <CustomButton
-                title="Save Changes"
-                onPress={handleSave}
+                title="Update Profile"
+                onPress={handleSubmit}
                 size="large"
-                style={styles.saveButton}
+                style={styles.submitButton}
               />
             )}
           </View>
@@ -139,6 +230,10 @@ const styles = StyleSheet.create({
     fontSize: typography.h1.fontSize,
     fontWeight: 'bold',
     color: colors.text.primary,
+  },
+  subtitle: {
+    fontSize: typography.body.fontSize,
+    color: colors.text.secondary,
   },
   editButton: {
     padding: spacing.sm,
@@ -183,7 +278,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderRadius: spacing.md,
   },
-  saveButton: {
+  submitButton: {
     marginTop: spacing.xl,
   },
 });

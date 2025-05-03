@@ -1,14 +1,15 @@
-from backend.routes import all_users
+from routes import all_users
 from flask import Flask
 from flask_cors import CORS
-from routes import purchase, deposit
+from routes import purchase, deposit, user
 
 app = Flask(__name__)
 CORS(app)
 
-# Register blueprints from the routes folder
-app.register_blueprint(all_users.user_bp)
+app.register_blueprint(all_users.all_users_bp)
 print("Users_bp works")
+app.register_blueprint(user.user_bp)
+print("User_bp works")
 app.register_blueprint(purchase.purchase_bp)
 print("Purchase_bp works")
 app.register_blueprint(deposit.deposit_bp)

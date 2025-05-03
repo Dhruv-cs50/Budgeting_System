@@ -98,5 +98,12 @@
                 "percentageCompleted": 60
             }
         ]
+    },
+    {
+        "name": "Bob Clark",
+        "email": "test123@test.edu",
+        "password": "123456",
+        "userId": 2,
+        "timestamp": "2025-05-02T19:46:25.880353"
     }
 ]

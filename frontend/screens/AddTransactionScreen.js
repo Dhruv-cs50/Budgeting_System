@@ -30,7 +30,7 @@ const AddTransactionScreen = ({ navigation }) => {
   const [formData, setFormData] = useState({
     amount: '',
     category: '',
-    date: new Date(),
+    date: new Date().toISOString().split('T')[0],
     notes: '',
     type: 'expense',
   });
@@ -41,12 +41,16 @@ const AddTransactionScreen = ({ navigation }) => {
     const newErrors = {};
     if (!formData.amount) {
       newErrors.amount = 'Amount is required';
-    } else if (isNaN(formData.amount) || parseFloat(formData.amount) <= 0) {
-      newErrors.amount = 'Please enter a valid amount';
+    } else if (isNaN(formData.amount)) {
+      newErrors.amount = 'Amount must be a number';
     }
 
     if (!formData.category) {
       newErrors.category = 'Category is required';
+    }
+
+    if (!formData.date) {
+      newErrors.date = 'Date is required';
     }
 
     setErrors(newErrors);
@@ -74,9 +78,34 @@ const AddTransactionScreen = ({ navigation }) => {
     setDatePickerVisible(false);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (validateForm()) {
-      navigation.goBack();
+      const dataToSend = {
+        amount: parseFloat(formData.amount),
+        category: formData.category,
+        date: formData.date,
+        notes: formData.notes,
+        type: formData.type,
+      };
+
+      try {
+        const response = await fetch('http://localhost:5001/api/transactions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(dataToSend),
+        });
+
+        if (response.ok) {
+          navigation.navigate('MainTabs');
+        } else {
+          const errorData = await response.json();
+          alert('Error: ' + (errorData.message || 'Failed to add transaction.'));
+        }
+      } catch (error) {
+        alert('Network error: ' + error.message);
+      }
     }
   };
 
@@ -92,6 +121,7 @@ const AddTransactionScreen = ({ navigation }) => {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
             <Text style={styles.title}>Add Transaction</Text>
+            <Text style={styles.subtitle}>Enter your transaction details</Text>
           </View>
 
           <View style={styles.typeSelector}>
@@ -172,7 +202,7 @@ const AddTransactionScreen = ({ navigation }) => {
               onPress={() => setDatePickerVisible(true)}
             >
               <Text style={styles.dateButtonText}>
-                {formData.date.toLocaleDateString()}
+                {formData.date}
               </Text>
             </TouchableOpacity>
 
@@ -182,7 +212,7 @@ const AddTransactionScreen = ({ navigation }) => {
               onChangeText={(value) => handleChange('notes', value)}
               placeholder="Add notes (optional)"
               multiline
-              numberOfLines={3}
+              numberOfLines={4}
             />
 
             <CustomButton
@@ -217,12 +247,18 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   header: {
+    marginTop: spacing.xl * 2,
     marginBottom: spacing.xl,
   },
   title: {
     fontSize: typography.h1.fontSize,
     fontWeight: 'bold',
     color: colors.text.primary,
+    marginBottom: spacing.xs,
+  },
+  subtitle: {
+    fontSize: typography.body.fontSize,
+    color: colors.text.secondary,
   },
   typeSelector: {
     flexDirection: 'row',
@@ -249,7 +285,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   form: {
-    marginBottom: spacing.xl,
+    marginTop: spacing.xl,
   },
   categoryContainer: {
     marginBottom: spacing.lg,

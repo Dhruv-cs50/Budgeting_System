@@ -189,13 +189,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: spacing.xl,
+    marginBottom: spacing.xl * 2,
   },
   signUpText: {
     color: colors.text.secondary,
+    fontSize: typography.body.fontSize,
   },
   signUpLink: {
     color: colors.primary.main,
     fontWeight: '600',
+    fontSize: typography.body.fontSize,
+    marginLeft: spacing.xs,
   },
 });
 
