@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: typography.body.fontSize,
-    color: colors.text.secondary,
+    color: '#000000',
     textAlign: 'center',
     paddingHorizontal: spacing.xl,
   },

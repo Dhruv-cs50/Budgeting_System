@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import CustomInput from '../components/common/CustomInput';
 import CustomButton from '../components/common/CustomButton';
@@ -28,6 +29,34 @@ const ProfileScreen = ({ navigation }) => {
     language: '',
   });
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const userEmail = await AsyncStorage.getItem('userEmail');
+        if (!userEmail) return;
+        const res = await fetch('http://localhost:5001/api/data');
+        const users = await res.json();
+        const user = users.find(u => u.email === userEmail);
+        if (user) {
+          setFormData({
+            firstName: user.fullName || '',
+            email: user.email || '',
+            dob: user.dateOfBirth || '',
+            occupation: user.occupation || '',
+            monthlyIncome: user.monthlyIncome ? String(user.monthlyIncome) : '',
+            phoneNumber: user.phoneNumber || '',
+            address: user.address || '',
+            preferredCurrency: user.preferredCurrency || '',
+            language: user.language || '',
+          });
+        }
+      } catch (e) {
+        // handle error
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const validateForm = () => {
     const newErrors = {};

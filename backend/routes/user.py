@@ -13,7 +13,8 @@ from datetime import datetime
 user_bp = Blueprint('user', __name__, url_prefix='/api/data')
 
 # Path to your JSON file acting as the "database"
-DATA_FILE = 'data.json'
+DATA_FILE = os.path.join(os.path.dirname(__file__), '..', 'data.json')
+DATA_FILE = os.path.abspath(DATA_FILE)
 
 # Ensure the file exists
 if not os.path.exists(DATA_FILE):
@@ -71,6 +72,7 @@ def add_user():
     data.append(new_entry)
 
     with open(DATA_FILE, 'w') as f:
+        print('Writing to:', DATA_FILE)
         json.dump(data, f, indent=4)
 
     return jsonify({'message': 'Data added successfully'}), 201

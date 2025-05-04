@@ -100,10 +100,41 @@
         ]
     },
     {
-        "name": "Bob Clark",
-        "email": "test123@test.edu",
-        "password": "123456",
+        "fullName": "Samuel P",
+        "email": "samuel@test.edu",
+        "password": "1234567",
+        "dateOfBirth": "2004-04-10",
+        "occupation": "Software Engineer",
+        "monthlyIncome": 5000,
+        "phoneNumber": "4089120293",
+        "preferredCurrency": "USD",
+        "language": "English",
+        "currentBalance": 4000,
+        "totalMonthlyBudget": 2000,
         "userId": 2,
-        "timestamp": "2025-05-02T19:46:25.880353"
+        "timestamp": "2025-05-03T14:45:32.836434",
+        "purchases": [
+            {
+                "name": "1",
+                "purchaseCategory": "Food",
+                "purchaseCost": 100,
+                "purchaseDate": "2025-05-04T00:39:26.562Z",
+                "purchaseId": 0
+            },
+            {
+                "name": "Car",
+                "purchaseCategory": "Transport",
+                "purchaseCost": 300,
+                "purchaseDate": "2025-05-04T00:39:49.191Z",
+                "purchaseId": 1
+            },
+            {
+                "name": "Surgery",
+                "purchaseCategory": "Health",
+                "purchaseCost": 1000,
+                "purchaseDate": "2025-05-04T00:40:03.082Z",
+                "purchaseId": 2
+            }
+        ]
     }
 ]

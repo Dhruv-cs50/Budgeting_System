@@ -97,7 +97,6 @@ const GoalsScreen = () => {
       });
 
       if (response.ok) {
-        // Success: reset the form and exit add mode
         setIsAddingGoal(false);
         setNewGoal({
           title: '',
@@ -106,7 +105,6 @@ const GoalsScreen = () => {
           category: '',
         });
       } else {
-        // Handle server errors
         const errorData = await response.json();
         alert('Error: ' + (errorData.message || 'Failed to add goal.'));
       }

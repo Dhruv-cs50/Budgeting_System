@@ -13,6 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import CustomInput from '../components/common/CustomInput';
 import CustomButton from '../components/common/CustomButton';
 import { colors, spacing, typography } from '../theme/colors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 //mock credentials
 const MOCK_CREDENTIALS = {
@@ -31,7 +32,7 @@ const LoginScreen = ({ navigation }) => {
     return re.test(email);
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     let isValid = true;
     setEmailError('');
     setPasswordError('');
@@ -53,16 +54,19 @@ const LoginScreen = ({ navigation }) => {
     }
 
     if (isValid) {
-      //for testing purposes, accept either mock credentials or any valid input
-      if ((email === MOCK_CREDENTIALS.email && password === MOCK_CREDENTIALS.password) || 
-          process.env.NODE_ENV === 'development') {
-        navigation.navigate('MainTabs');
-      } else {
-        Alert.alert(
-          'Test Credentials',
-          `Please use these credentials for testing:\nEmail: ${MOCK_CREDENTIALS.email}\nPassword: ${MOCK_CREDENTIALS.password}`,
-          [{ text: 'OK' }]
-        );
+      try {
+        const response = await fetch('http://localhost:5001/api/data');
+        const users = await response.json();
+        const user = users.find(u => u.email === email);
+
+        if (user && user.password === password) {
+          await AsyncStorage.setItem('userEmail', email);
+          navigation.navigate('MainTabs');
+        } else {
+          Alert.alert('Login Failed', 'Invalid email or password.');
+        }
+      } catch (error) {
+        Alert.alert('Network Error', 'Unable to connect to the server.');
       }
     }
   };
@@ -158,7 +162,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: typography.body.fontSize,
-    color: colors.text.secondary,
+    color: '#000000',
   },
   form: {
     marginTop: spacing.xl,
@@ -192,7 +196,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl * 2,
   },
   signUpText: {
-    color: colors.text.secondary,
+    color: '#000000',
     fontSize: typography.body.fontSize,
   },
   signUpLink: {

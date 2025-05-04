@@ -13,6 +13,8 @@ import DateTimePicker from 'react-native-modal-datetime-picker';
 import CustomInput from '../components/common/CustomInput';
 import CustomButton from '../components/common/CustomButton';
 import { colors, spacing, typography } from '../theme/colors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import api from '../services/api';
 
 const categories = [
   'Food',
@@ -80,28 +82,29 @@ const AddTransactionScreen = ({ navigation }) => {
 
   const handleSubmit = async () => {
     if (validateForm()) {
-      const dataToSend = {
-        amount: parseFloat(formData.amount),
-        category: formData.category,
-        date: formData.date,
-        notes: formData.notes,
-        type: formData.type,
-      };
-
       try {
-        const response = await fetch('http://localhost:5001/api/transactions', {
+        const email = await AsyncStorage.getItem('userEmail');
+        const user = await api.getUserByEmail(email);
+        const userId = user.user_id || user.userId || user.id;
+        if (!userId) {
+          alert('User not found');
+          return;
+        }
+        const newTransaction = {
+          name: formData.notes || 'Transaction',
+          purchaseCategory: formData.category,
+          purchaseCost: parseFloat(formData.amount),
+          purchaseDate: new Date().toISOString(),
+        };
+        const response = await fetch(`http://192.168.4.63:5001/api/data/purchase/users/${userId}/transactions`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(dataToSend),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newTransaction),
         });
-
         if (response.ok) {
-          navigation.navigate('MainTabs');
+          navigation.goBack();
         } else {
-          const errorData = await response.json();
-          alert('Error: ' + (errorData.message || 'Failed to add transaction.'));
+          alert('Error: Failed to add transaction.');
         }
       } catch (error) {
         alert('Network error: ' + error.message);

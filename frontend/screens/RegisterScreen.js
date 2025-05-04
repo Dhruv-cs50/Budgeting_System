@@ -27,6 +27,14 @@ const RegisterScreen = ({ navigation }) => {
     email: '',
     password: '',
     confirmPassword: '',
+    dateOfBirth: '',
+    occupation: '',
+    monthlyIncome: '',
+    phoneNumber: '',
+    preferredCurrency: '',
+    language: '',
+    currentBalance: '',
+    totalMonthlyBudget: '',
   });
   const [errors, setErrors] = useState({});
 
@@ -76,9 +84,17 @@ const RegisterScreen = ({ navigation }) => {
   const handleRegister = async () => {
     if (validateForm()) {
       const dataToSend = {
-        name: formData.name,
-        email: formData.email,
-        password: formData.password,
+        fullName: formData.name || null,
+        email: formData.email || null,
+        password: formData.password || null,
+        dateOfBirth: formData.dateOfBirth || null,
+        occupation: formData.occupation || null,
+        monthlyIncome: formData.monthlyIncome ? parseFloat(formData.monthlyIncome) : 0,
+        phoneNumber: formData.phoneNumber || null,
+        preferredCurrency: formData.preferredCurrency || null,
+        language: formData.language || null,
+        currentBalance: formData.currentBalance ? parseFloat(formData.currentBalance) : 0,
+        totalMonthlyBudget: formData.totalMonthlyBudget ? parseFloat(formData.totalMonthlyBudget) : 0
       };
 
       try {
@@ -112,6 +128,14 @@ const RegisterScreen = ({ navigation }) => {
       email: TEST_ACCOUNT.email,
       password: TEST_ACCOUNT.password,
       confirmPassword: TEST_ACCOUNT.password,
+      dateOfBirth: '',
+      occupation: '',
+      monthlyIncome: '',
+      phoneNumber: '',
+      preferredCurrency: '',
+      language: '',
+      currentBalance: '',
+      totalMonthlyBudget: '',
     });
   };
 
@@ -165,6 +189,74 @@ const RegisterScreen = ({ navigation }) => {
               placeholder="Confirm your password"
               secureTextEntry
               error={errors.confirmPassword}
+            />
+
+            <CustomInput
+              label="Date of Birth"
+              value={formData.dateOfBirth}
+              onChangeText={(value) => handleChange('dateOfBirth', value)}
+              placeholder="YYYY-MM-DD"
+              error={errors.dateOfBirth}
+            />
+
+            <CustomInput
+              label="Occupation"
+              value={formData.occupation}
+              onChangeText={(value) => handleChange('occupation', value)}
+              placeholder="Enter your occupation"
+              error={errors.occupation}
+            />
+
+            <CustomInput
+              label="Monthly Income"
+              value={formData.monthlyIncome}
+              onChangeText={(value) => handleChange('monthlyIncome', value)}
+              placeholder="Enter your monthly income"
+              keyboardType="numeric"
+              error={errors.monthlyIncome}
+            />
+
+            <CustomInput
+              label="Phone Number"
+              value={formData.phoneNumber}
+              onChangeText={(value) => handleChange('phoneNumber', value)}
+              placeholder="Enter your phone number"
+              keyboardType="phone-pad"
+              error={errors.phoneNumber}
+            />
+
+            <CustomInput
+              label="Preferred Currency"
+              value={formData.preferredCurrency}
+              onChangeText={(value) => handleChange('preferredCurrency', value)}
+              placeholder="Enter your preferred currency"
+              error={errors.preferredCurrency}
+            />
+
+            <CustomInput
+              label="Language"
+              value={formData.language}
+              onChangeText={(value) => handleChange('language', value)}
+              placeholder="Enter your preferred language"
+              error={errors.language}
+            />
+
+            <CustomInput
+              label="Current Balance"
+              value={formData.currentBalance}
+              onChangeText={(value) => handleChange('currentBalance', value)}
+              placeholder="Enter your current balance"
+              keyboardType="numeric"
+              error={errors.currentBalance}
+            />
+
+            <CustomInput
+              label="Total Monthly Budget"
+              value={formData.totalMonthlyBudget}
+              onChangeText={(value) => handleChange('totalMonthlyBudget', value)}
+              placeholder="Enter your total monthly budget"
+              keyboardType="numeric"
+              error={errors.totalMonthlyBudget}
             />
 
             <CustomButton

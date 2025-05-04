@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,31 +6,103 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import CustomButton from '../components/common/CustomButton';
 import { colors, spacing, typography } from '../theme/colors';
+import api from '../services/api';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-//mock data for testing
-const mockData = {
-  balance: 2500.00,
-  monthlyBudget: 3000.00,
-  spent: 1500.00,
-  recentTransactions: [
-    { id: 1, title: 'Grocery Shopping', amount: -85.50, category: 'Food', date: 'Today' },
-    { id: 2, title: 'Salary', amount: 3000.00, category: 'Income', date: 'Yesterday' },
-    { id: 3, title: 'Netflix', amount: -15.99, category: 'Entertainment', date: 'Yesterday' },
-    { id: 4, title: 'Gas Station', amount: -45.00, category: 'Transport', date: '2 days ago' },
-  ],
-  spendingCategories: [
-    { name: 'Food', amount: 450.00, percentage: 30 },
-    { name: 'Transport', amount: 200.00, percentage: 13 },
-    { name: 'Entertainment', amount: 150.00, percentage: 10 },
-    { name: 'Bills', amount: 700.00, percentage: 47 },
-  ],
-};
+const CATEGORIES = [
+  'Food',
+  'Transport',
+  'Entertainment',
+  'Bills',
+  'Shopping',
+  'Health',
+  'Education',
+  'Income',
+  'Other',
+];
 
 const HomeScreen = ({ navigation }) => {
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isEmpty, setIsEmpty] = useState(false);
+  const nav = useNavigation();
+
+  const fetchUserDataByEmail = useCallback(async (email) => {
+    setLoading(true);
+    setError(null);
+    try {
+      if (!email) {
+        setError('No user email found. Please log in again.');
+        setLoading(false);
+        return;
+      }
+      const user = await api.getUserByEmail(email);
+      if (!user || user.error) {
+        setError('User not found. Please log in again.');
+        setLoading(false);
+        return;
+      }
+      const purchases = user.purchases || [];
+      const now = new Date();
+      const currentMonthPurchases = purchases.filter(p => {
+        const d = new Date(p.purchaseDate);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      });
+    
+      const totalSpent = currentMonthPurchases.reduce((sum, p) => sum + (p.purchaseCost || 0), 0);
+      const remainingBudget = user.totalMonthlyBudget - totalSpent;
+      const spendingByCategory = CATEGORIES.map(cat => {
+        const amount = currentMonthPurchases
+          .filter(p => p.purchaseCategory === cat)
+          .reduce((sum, p) => sum + (p.purchaseCost || 0), 0);
+        return { name: cat, amount };
+      });
+      setUserData({
+        balance: user.currentBalance,
+        monthlyBudget: user.totalMonthlyBudget,
+        spent: totalSpent,
+        remainingBudget,
+        spendingCategories: spendingByCategory
+      });
+    } catch (err) {
+      setError('Failed to load user data. Please check your connection or try again.');
+      setLoading(false);
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const getUserEmailAndFetch = async () => {
+        try {
+          const storedUserEmail = await AsyncStorage.getItem('userEmail');
+          console.log('Loaded userEmail from AsyncStorage:', storedUserEmail);
+          await fetchUserDataByEmail(storedUserEmail);
+        } catch (err) {
+          setError('Failed to load user info. Please log in again.');
+          setLoading(false);
+        }
+      };
+      getUserEmailAndFetch();
+    }, [fetchUserDataByEmail])
+  );
+
+  useEffect(() => {
+    const unsubscribe = nav.addListener('tabPress', () => {
+      AsyncStorage.getItem('userEmail').then(email => fetchUserDataByEmail(email));
+    });
+    return unsubscribe;
+  }, [nav, fetchUserDataByEmail]);
+
   const renderTransactionItem = (transaction) => (
     <TouchableOpacity
       key={transaction.id}
@@ -59,18 +131,64 @@ const HomeScreen = ({ navigation }) => {
     <View key={category.name} style={styles.categoryItem}>
       <View style={styles.categoryHeader}>
         <Text style={styles.categoryName}>{category.name}</Text>
-        <Text style={styles.categoryAmount}>${category.amount.toFixed(2)}</Text>
+        <Text style={styles.categoryAmount}>${Number(category.amount || 0).toFixed(2)}</Text>
       </View>
       <View style={styles.progressBar}>
         <View
           style={[
             styles.progressFill,
-            { width: `${category.percentage}%` },
+            {
+              width: Number(userData.spent) > 0
+                ? `${(Number(category.amount || 0) / Number(userData.spent || 1)) * 100}%`
+                : '0%',
+            },
           ]}
         />
       </View>
     </View>
   );
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary.main} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+        <CustomButton
+          title="Retry"
+          onPress={() => setLoading(true)}
+        />
+      </View>
+    );
+  }
+
+  if (isEmpty) {
+    return (
+      <LinearGradient
+        colors={[colors.background.light, colors.primary.light]}
+        style={styles.container}
+      >
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyTitle}>Welcome to Your Budgeting App!</Text>
+          <Text style={styles.emptyText}>
+            You don't have any transactions or data yet. Start by adding your first transaction or setting up your budget.
+          </Text>
+          <CustomButton
+            title="Add Transaction"
+            onPress={() => navigation.navigate('AddTransaction')}
+            size="large"
+            style={styles.emptyButton}
+          />
+        </View>
+      </LinearGradient>
+    );
+  }
 
   return (
     <LinearGradient
@@ -81,52 +199,35 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.header}>
           <View style={styles.balanceCard}>
             <Text style={styles.balanceLabel}>Current Balance</Text>
-            <Text style={styles.balanceAmount}>${mockData.balance.toFixed(2)}</Text>
+            <Text style={styles.balanceAmount}>${Number(userData.balance || 0).toFixed(2)}</Text>
           </View>
-
           <View style={styles.budgetCard}>
-            <View style={styles.budgetHeader}>
-              <Text style={styles.budgetTitle}>Monthly Budget</Text>
-              <Text style={styles.budgetAmount}>
-                ${mockData.spent.toFixed(2)} / ${mockData.monthlyBudget.toFixed(2)}
-              </Text>
-            </View>
+            <Text style={styles.budgetTitle}>Monthly Budget</Text>
+            <Text style={styles.budgetAmount}>
+              ${Number(userData.remainingBudget || 0).toFixed(2)} left / ${Number(userData.monthlyBudget || 0).toFixed(2)}
+            </Text>
             <View style={styles.progressBar}>
               <View
                 style={[
                   styles.progressFill,
-                  {
-                    width: `${(mockData.spent / mockData.monthlyBudget) * 100}%`,
-                  },
+                  { width: `${(Number(userData.spent || 0) / Number(userData.monthlyBudget || 1)) * 100}%` },
                 ]}
               />
             </View>
           </View>
         </View>
-
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Spending Categories</Text>
-          {mockData.spendingCategories.map(renderCategoryItem)}
+          {userData.spendingCategories.map(renderCategoryItem)}
         </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Transactions</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('TransactionsHistory')}>
-              <Text style={styles.viewAllText}>View All</Text>
-            </TouchableOpacity>
-          </View>
-          {mockData.recentTransactions.map(renderTransactionItem)}
+        <View style={styles.fabContainer}>
+          <CustomButton
+            title="Add Transaction"
+            onPress={() => navigation.navigate('AddTransaction')}
+            size="large"
+          />
         </View>
       </ScrollView>
-
-      <View style={styles.fabContainer}>
-        <CustomButton
-          title="Add Transaction"
-          onPress={() => navigation.navigate('AddTransaction')}
-          size="large"
-        />
-      </View>
     </LinearGradient>
   );
 };
@@ -134,6 +235,46 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  emptyTitle: {
+    fontSize: typography.h2.fontSize,
+    fontWeight: 'bold',
+    color: colors.text.primary,
+    marginBottom: spacing.lg,
+    textAlign: 'center',
+  },
+  emptyText: {
+    fontSize: typography.body.fontSize,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+    lineHeight: 24,
+  },
+  emptyButton: {
+    width: '80%',
+  },
+  errorText: {
+    color: colors.error,
+    fontSize: typography.body.fontSize,
+    marginBottom: spacing.lg,
+    textAlign: 'center',
   },
   scrollView: {
     flex: 1,
@@ -172,11 +313,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  budgetHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-  },
   budgetTitle: {
     fontSize: typography.body.fontSize,
     color: colors.text.secondary,
@@ -200,20 +336,10 @@ const styles = StyleSheet.create({
   section: {
     padding: spacing.lg,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
   sectionTitle: {
     fontSize: typography.h3.fontSize,
     fontWeight: 'bold',
     color: colors.text.primary,
-  },
-  viewAllText: {
-    color: colors.primary.main,
-    fontSize: typography.body.fontSize,
   },
   categoryItem: {
     marginBottom: spacing.md,

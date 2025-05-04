@@ -22,52 +22,24 @@ def get_purchase(user_id):
         if user['user_id'] == user_id:
             return jsonify(user.get('purchases', []))
 
-@purchase_bp.route('/<int:user_id>', methods=['PATCH'])
-def record_purchase(user_id):
-    """
-    PATCH /api/data/purchase/<user_id>
-    Records a new purchase for a specific user. Deducts the cost of the purchase
-    from the user's current balance, timestamps the transaction, and appends it
-    to the user's purchases list.
-
-    Expected JSON in request body:
-    {
-        "name": String,
-        "purchaseCategory": String,
-        "purchaseCost": Float
-    }
-
-    Response: Confirmation message or appropriate error if user not found or data is invalid.
-    """
-    new_entry = request.json
-
+@purchase_bp.route('/users/<int:user_id>/transactions', methods=['POST'])
+def add_transaction(user_id):
+    new_transaction = request.json
     with open(DATA_FILE, 'r') as f:
-        data = json.load(f)
-
-    for user in data:
-        if user['user_id'] == user_id:
-            try:
-                if user['currentBalance'] - float(new_entry['purchaseCost']) < 0:
-                    return jsonify({'error': 'Insufficient funds.'}), 400
-
-                user['currentBalance'] = round(user['currentBalance'] - float(new_entry['purchaseCost']), 2)
-                purchases = user.get('purchases', [])
-                new_entry['purchaseId'] = len(purchases)
-                new_entry['purchaseDate'] = datetime.now().isoformat()
-                purchases.append(new_entry)
-                user['purchases'] = purchases
-                break
-            except (KeyError, TypeError, ValueError):
-                return jsonify({'error': 'Invalid or missing purchaseCost value.'}), 400
+        users = json.load(f)
+    # Find the user
+    for user in users:
+        if user.get('user_id') == user_id or user.get('userId') == user_id:
+            if 'purchases' not in user:
+                user['purchases'] = []
+            new_transaction['purchaseId'] = len(user['purchases'])
+            user['purchases'].append(new_transaction)
+            break
     else:
-        return jsonify({'error': 'User not found.'}), 404
-
+        return jsonify({'error': 'User not found'}), 404
     with open(DATA_FILE, 'w') as f:
-        json.dump(data, f, indent=4)
-
-    return jsonify({'message': 'Purchase recorded successfully'}), 201
-
-
+        json.dump(users, f, indent=4)
+    return jsonify({'success': True, 'user': user})
 
 @purchase_bp.route('/<int:user_id>', methods=['DELETE'])
 def delete_purchase(user_id):

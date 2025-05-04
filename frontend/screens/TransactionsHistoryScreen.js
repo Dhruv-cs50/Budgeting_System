@@ -1,146 +1,69 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
-  TextInput,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, spacing, typography } from '../theme/colors';
+import api from '../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// mock data for testing
-const mockTransactions = [
-  {
-    id: '1',
-    title: 'Grocery Shopping',
-    amount: -75.50,
-    category: 'Food',
-    date: '2024-03-15',
-  },
-  {
-    id: '2',
-    title: 'Salary Deposit',
-    amount: 3000.00,
-    category: 'Income',
-    date: '2024-03-14',
-  },
-  {
-    id: '3',
-    title: 'Netflix Subscription',
-    amount: -15.99,
-    category: 'Entertainment',
-    date: '2024-03-13',
-  },
-  {
-    id: '4',
-    title: 'Gas Station',
-    amount: -45.00,
-    category: 'Transport',
-    date: '2024-03-12',
-  },
-];
 
-const categories = ['All', 'Food', 'Transport', 'Entertainment', 'Bills', 'Income'];
+const TransactionsHistoryScreen = () => {
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-const TransactionsHistoryScreen = ({ navigation }) => {
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [searchQuery, setSearchQuery] = useState('');
+  const fetchTransactions = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const email = await AsyncStorage.getItem('userEmail');
+      const user = await api.getUserByEmail(email);
+      const purchases = user.purchases || [];
+      purchases.sort((a, b) => new Date(b.purchaseDate) - new Date(a.purchaseDate));
+      setTransactions(purchases);
+    } catch (err) {
+      setError('Failed to load transactions.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const filteredTransactions = mockTransactions.filter(transaction => {
-    const matchesCategory = selectedCategory === 'All' || transaction.category === selectedCategory;
-    const matchesSearch = transaction.title.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
-
-  const formatDate = (dateString) => {
-    const options = { month: 'short', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-  };
-
-  const renderTransactionItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.transactionItem}
-      onPress={() => navigation.navigate('TransactionDetails', { transaction: item })}
-    >
-      <View style={styles.transactionLeft}>
-        <Text style={styles.transactionTitle}>{item.title}</Text>
-        <Text style={styles.transactionCategory}>{item.category}</Text>
-      </View>
-      <View style={styles.transactionRight}>
-        <Text
-          style={[
-            styles.transactionAmount,
-            item.amount > 0 ? styles.incomeAmount : styles.expenseAmount,
-          ]}
-        >
-          ${Math.abs(item.amount).toFixed(2)}
-        </Text>
-        <Text style={styles.transactionDate}>{formatDate(item.date)}</Text>
-      </View>
-    </TouchableOpacity>
-  );
+  useEffect(() => {
+    fetchTransactions();
+  }, [fetchTransactions]);
 
   return (
-    <LinearGradient
-      colors={[colors.background.light, colors.primary.light]}
-      style={styles.container}
-    >
-      <View style={styles.header}>
-        <Text style={styles.title}>Transactions</Text>
-      </View>
-
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search transactions"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholderTextColor={colors.text.secondary}
-        />
-      </View>
-
-      <View style={styles.categoriesContainer}>
-        <FlatList
-          data={categories}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[
-                styles.categoryButton,
-                selectedCategory === item && styles.categoryButtonActive,
-              ]}
-              onPress={() => setSelectedCategory(item)}
-            >
-              <Text
-                style={[
-                  styles.categoryButtonText,
-                  selectedCategory === item && styles.categoryButtonTextActive,
-                ]}
-              >
-                {item}
+    <LinearGradient colors={[colors.background.light, colors.primary.light]} style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.header}>Transactions</Text>
+        {loading ? (
+          <Text style={styles.loadingText}>Loading...</Text>
+        ) : error ? (
+          <Text style={styles.errorText}>{error}</Text>
+        ) : transactions.length === 0 ? (
+          <Text style={styles.placeholderText}>No transactions yet. Add your first transaction to get started!</Text>
+        ) : (
+          transactions.map((transaction, idx) => (
+            <View key={idx} style={styles.transactionItem}>
+              <Text style={styles.transactionTitle}>{transaction.name || 'Transaction'}</Text>
+              <View style={styles.transactionDetails}>
+                <Text style={styles.transactionCategory}>{transaction.purchaseCategory}</Text>
+                <Text style={styles.transactionAmount}>
+                  ${Number(transaction.purchaseCost || 0).toFixed(2)}
+                </Text>
+              </View>
+              <Text style={styles.transactionDate}>
+                {transaction.purchaseDate ? new Date(transaction.purchaseDate).toLocaleDateString() : 'No Date'}
               </Text>
-            </TouchableOpacity>
-          )}
-          keyExtractor={item => item}
-          contentContainerStyle={styles.categoriesList}
-        />
-      </View>
-
-      {filteredTransactions.length > 0 ? (
-        <FlatList
-          data={filteredTransactions}
-          renderItem={renderTransactionItem}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.transactionsList}
-        />
-      ) : (
-        <View style={styles.noTransactionsContainer}>
-          <Text style={styles.noTransactionsText}>No transactions found</Text>
-        </View>
-      )}
+            </View>
+          ))
+        )}
+      </ScrollView>
     </LinearGradient>
   );
 };
@@ -149,99 +72,69 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
+  scrollContent: {
     padding: spacing.lg,
   },
-  title: {
-    fontSize: typography.h1.fontSize,
+  header: {
+    fontSize: typography.h2.fontSize,
     fontWeight: 'bold',
     color: colors.text.primary,
+    marginBottom: spacing.lg,
+    textAlign: 'left',
   },
-  searchContainer: {
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.md,
-  },
-  searchInput: {
-    backgroundColor: colors.background.main,
-    padding: spacing.md,
-    borderRadius: spacing.md,
+  loadingText: {
+    color: colors.text.secondary,
     fontSize: typography.body.fontSize,
-    color: colors.text.primary,
+    textAlign: 'center',
+    marginTop: spacing.xl,
   },
-  categoriesContainer: {
-    marginBottom: spacing.md,
-  },
-  categoriesList: {
-    paddingHorizontal: spacing.lg,
-  },
-  categoryButton: {
-    backgroundColor: colors.background.main,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: spacing.md,
-    marginRight: spacing.sm,
-  },
-  categoryButtonActive: {
-    backgroundColor: colors.primary.light,
-  },
-  categoryButtonText: {
+  errorText: {
+    color: colors.error,
     fontSize: typography.body.fontSize,
-    color: colors.text.primary,
+    textAlign: 'center',
+    marginTop: spacing.xl,
   },
-  categoryButtonTextActive: {
-    color: colors.text.light,
-    fontWeight: '600',
-  },
-  transactionsList: {
-    paddingHorizontal: spacing.lg,
+  placeholderText: {
+    color: colors.text.secondary,
+    fontSize: typography.body.fontSize,
+    textAlign: 'center',
+    marginTop: spacing.xl,
   },
   transactionItem: {
     backgroundColor: colors.background.main,
-    padding: spacing.md,
     borderRadius: spacing.md,
-    marginBottom: spacing.sm,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  transactionLeft: {
-    flex: 1,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    elevation: 1,
+    shadowColor: colors.common.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   transactionTitle: {
     fontSize: typography.body.fontSize,
-    fontWeight: '500',
+    fontWeight: '600',
     color: colors.text.primary,
     marginBottom: spacing.xs,
   },
-  transactionCategory: {
-    fontSize: typography.caption.fontSize,
-    color: colors.text.secondary,
-  },
-  transactionRight: {
-    alignItems: 'flex-end',
-  },
-  transactionAmount: {
-    fontSize: typography.body.fontSize,
-    fontWeight: '600',
+  transactionDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: spacing.xs,
   },
-  incomeAmount: {
-    color: colors.success,
+  transactionCategory: {
+    color: colors.text.secondary,
+    fontSize: typography.caption.fontSize,
   },
-  expenseAmount: {
-    color: colors.error,
+  transactionAmount: {
+    color: colors.text.primary,
+    fontWeight: 'bold',
+    fontSize: typography.body.fontSize,
   },
   transactionDate: {
+    color: colors.text.secondary,
     fontSize: typography.caption.fontSize,
-    color: colors.text.secondary,
-  },
-  noTransactionsContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  noTransactionsText: {
-    fontSize: typography.body.fontSize,
-    color: colors.text.secondary,
+    textAlign: 'right',
   },
 });
 

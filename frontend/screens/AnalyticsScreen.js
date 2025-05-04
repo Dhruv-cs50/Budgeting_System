@@ -1,51 +1,118 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, G } from 'react-native-svg';
 import { colors, spacing, typography } from '../theme/colors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import api from '../services/api';
 
-//mock data
-const mockData = {
-  monthlySpending: [
-    { month: 'Jan', amount: 2500 },
-    { month: 'Feb', amount: 2800 },
-    { month: 'Mar', amount: 2200 },
-    { month: 'Apr', amount: 3000 },
-  ],
-  categorySpending: [
-    { category: 'Food', amount: 450, percentage: 30 },
-    { category: 'Transport', amount: 200, percentage: 13 },
-    { category: 'Entertainment', amount: 150, percentage: 10 },
-    { category: 'Bills', amount: 700, percentage: 47 },
-  ],
-  savings: {
-    current: 5000,
-    goal: 10000,
-    monthlyTarget: 1000,
-  },
-};
+const CATEGORIES = [
+  'Food',
+  'Transport',
+  'Entertainment',
+  'Bills',
+  'Shopping',
+  'Health',
+  'Education',
+  'Income',
+  'Other',
+];
 
 const { width } = Dimensions.get('window');
 const CHART_WIDTH = width - spacing.lg * 2;
 const CHART_RADIUS = CHART_WIDTH / 2.5;
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 const AnalyticsScreen = () => {
-  const [selectedTimeframe, setSelectedTimeframe] = useState('month');
+  const [monthlySpending, setMonthlySpending] = useState([]);
+  const [categorySpending, setCategorySpending] = useState([]);
+  const [savings, setSavings] = useState({ current: 0, goal: 0, monthlyTarget: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchAndProcessData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const email = await AsyncStorage.getItem('userEmail');
+        if (!email) throw new Error('No user email found. Please log in again.');
+        const user = await api.getUserByEmail(email);
+        if (!user || user.error) throw new Error('User not found. Please log in again.');
+        const purchases = user.purchases || [];
+        // --- Monthly Spending (last 4 months) ---
+        const now = new Date();
+        const monthlyTotals = Array(12).fill(0);
+        purchases.forEach(tx => {
+          if (tx.purchaseDate) {
+            const date = new Date(tx.purchaseDate);
+            const monthIdx = date.getMonth();
+            if (date.getFullYear() === now.getFullYear()) {
+              monthlyTotals[monthIdx] += Number(tx.purchaseCost) || 0;
+            }
+          }
+        });
+        const currentMonth = now.getMonth();
+        const monthsToShow = 4;
+        const barData = [];
+        for (let i = monthsToShow - 1; i >= 0; i--) {
+          const idx = (currentMonth - i + 12) % 12;
+          barData.push({
+            month: MONTHS[idx],
+            amount: monthlyTotals[idx],
+          });
+        }
+        setMonthlySpending(barData);
+        // --- Category Spending (current month) ---
+        const currentMonthPurchases = purchases.filter(p => {
+          const d = new Date(p.purchaseDate);
+          return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        });
+        const categoryTotals = {};
+        CATEGORIES.forEach(cat => { categoryTotals[cat] = 0; });
+        currentMonthPurchases.forEach(tx => {
+          const cat = tx.purchaseCategory || 'Other';
+          if (!categoryTotals.hasOwnProperty(cat)) categoryTotals[cat] = 0;
+          categoryTotals[cat] += Number(tx.purchaseCost) || 0;
+        });
+        const total = Object.values(categoryTotals).reduce((a, b) => a + b, 0);
+        const pieData = CATEGORIES.map(cat => ({
+          category: cat,
+          amount: categoryTotals[cat],
+          percentage: total ? Math.round((categoryTotals[cat] / total) * 100) : 0,
+        }));
+        setCategorySpending(pieData);
+        // --- Savings ---
+        setSavings({
+          current: user.currentBalance || 0,
+          goal: user.savingsGoal || 0,
+          monthlyTarget: user.monthlySavingsTarget || 0,
+        });
+      } catch (e) {
+        setError(e.message || 'Failed to load analytics data.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAndProcessData();
+  }, []);
 
   const renderBarChart = () => {
-    const maxAmount = Math.max(...mockData.monthlySpending.map(item => item.amount));
-    
+    if (!monthlySpending.length) return null;
+    const maxAmount = Math.max(...monthlySpending.map(item => item.amount), 1);
     return (
       <View style={styles.chartContainer}>
         <Text style={styles.chartTitle}>Monthly Spending</Text>
         <View style={styles.barChart}>
-          {mockData.monthlySpending.map((item, index) => {
+          {monthlySpending.map((item, index) => {
             const barHeight = (item.amount / maxAmount) * 150;
             return (
               <View key={index} style={styles.barContainer}>
@@ -60,20 +127,15 @@ const AnalyticsScreen = () => {
   };
 
   const renderPieChart = () => {
-    const total = mockData.categorySpending.reduce((sum, item) => sum + item.percentage, 0);
+    const total = categorySpending.reduce((sum, item) => sum + item.percentage, 0);
     let startAngle = 0;
-
     const createPieSegment = (percentage) => {
       const angle = (percentage / 100) * 2 * Math.PI;
       const endAngle = startAngle + angle;
-      
-      // Calculate the path
       const x1 = CHART_RADIUS + CHART_RADIUS * Math.cos(startAngle);
       const y1 = CHART_RADIUS + CHART_RADIUS * Math.sin(startAngle);
       const x2 = CHART_RADIUS + CHART_RADIUS * Math.cos(endAngle);
       const y2 = CHART_RADIUS + CHART_RADIUS * Math.sin(endAngle);
-      
-      // Create the arc path
       const largeArcFlag = angle > Math.PI ? 1 : 0;
       const path = `
         M ${CHART_RADIUS} ${CHART_RADIUS}
@@ -81,18 +143,16 @@ const AnalyticsScreen = () => {
         A ${CHART_RADIUS} ${CHART_RADIUS} 0 ${largeArcFlag} 1 ${x2} ${y2}
         Z
       `;
-      
       startAngle = endAngle;
       return path;
     };
-
     return (
       <View style={styles.chartContainer}>
         <Text style={styles.chartTitle}>Spending by Category</Text>
         <View style={styles.pieChartContainer}>
           <Svg width={CHART_RADIUS * 2} height={CHART_RADIUS * 2}>
             <G>
-              {mockData.categorySpending.map((item, index) => (
+              {categorySpending.map((item, index) => (
                 <Path
                   key={index}
                   d={createPieSegment(item.percentage)}
@@ -104,7 +164,7 @@ const AnalyticsScreen = () => {
           </Svg>
         </View>
         <View style={styles.legend}>
-          {mockData.categorySpending.map((item, index) => (
+          {categorySpending.map((item, index) => (
             <View key={index} style={styles.legendItem}>
               <View
                 style={[
@@ -126,8 +186,7 @@ const AnalyticsScreen = () => {
   };
 
   const renderSavingsCard = () => {
-    const progress = (mockData.savings.current / mockData.savings.goal) * 100;
-    
+    const progress = savings.goal ? (savings.current / savings.goal) * 100 : 0;
     return (
       <View style={styles.savingsCard}>
         <Text style={styles.savingsTitle}>Savings Progress</Text>
@@ -137,20 +196,35 @@ const AnalyticsScreen = () => {
         <View style={styles.savingsInfo}>
           <View>
             <Text style={styles.savingsLabel}>Current</Text>
-            <Text style={styles.savingsAmount}>${mockData.savings.current}</Text>
+            <Text style={styles.savingsAmount}>${savings.current}</Text>
           </View>
           <View>
             <Text style={styles.savingsLabel}>Goal</Text>
-            <Text style={styles.savingsAmount}>${mockData.savings.goal}</Text>
+            <Text style={styles.savingsAmount}>${savings.goal}</Text>
           </View>
           <View>
             <Text style={styles.savingsLabel}>Monthly Target</Text>
-            <Text style={styles.savingsAmount}>${mockData.savings.monthlyTarget}</Text>
+            <Text style={styles.savingsAmount}>${savings.monthlyTarget}</Text>
           </View>
         </View>
       </View>
     );
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}> 
+        <ActivityIndicator size="large" color={colors.primary.main} />
+      </View>
+    );
+  }
+  if (error) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}> 
+        <Text style={{ color: colors.error, fontSize: 18, marginBottom: 16 }}>{error}</Text>
+      </View>
+    );
+  }
 
   return (
     <LinearGradient
@@ -161,7 +235,6 @@ const AnalyticsScreen = () => {
         <View style={styles.header}>
           <Text style={styles.title}>Analytics</Text>
         </View>
-
         {renderBarChart()}
         {renderPieChart()}
         {renderSavingsCard()}
