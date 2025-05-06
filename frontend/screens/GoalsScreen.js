@@ -14,7 +14,7 @@ import { colors, spacing, typography } from '../theme/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 
-const BACKEND_URL = 'http://172.20.205.147:5001';
+const BACKEND_URL = 'http://192.168.55.153:5001';
 
 const getUserIdByEmail = async (email) => {
   const res = await fetch(`${BACKEND_URL}/users/email/${encodeURIComponent(email)}`);

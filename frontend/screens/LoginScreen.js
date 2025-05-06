@@ -55,7 +55,7 @@ const LoginScreen = ({ navigation }) => {
 
     if (isValid) {
       try {
-        const response = await fetch('http://localhost:5001/api/data');
+        const response = await fetch('http://192.168.55.153:5001/api/data');
         const users = await response.json();
         const user = users.find(u => u.email === email);
 

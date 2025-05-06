@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://172.20.205.147:5001';
+const API_BASE_URL = 'http://192.168.55.153:5001';
 
 const api = {
   getUser: async (userId) => {

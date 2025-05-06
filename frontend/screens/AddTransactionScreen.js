@@ -127,7 +127,7 @@ const AddTransactionScreen = ({ navigation }) => {
           console.log('Assigning goalId to transaction:', newTransaction.goalId);
         }
         console.log('Transaction to add:', newTransaction);
-        const addTxRes = await fetch(`http://172.20.205.147:5001/api/data/purchase/users/${userId}/transactions`, {
+        const addTxRes = await fetch(`http://192.168.55.153:5001/api/data/purchase/users/${userId}/transactions`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newTransaction),
@@ -147,7 +147,7 @@ const AddTransactionScreen = ({ navigation }) => {
         }
         if (formData.type === 'income') {
           const newBalance = (user.currentBalance || 0) + amount;
-          const url = `http://172.20.205.147:5001/users/email/${encodeURIComponent(email)}`;
+          const url = `http://192.168.55.153:5001/users/email/${encodeURIComponent(email)}`;
           const payload = { currentBalance: newBalance };
           try {
             const patchRes = await fetch(url, {

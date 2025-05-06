@@ -64,7 +64,6 @@ const HomeScreen = ({ navigation }) => {
         return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
       });
     
-      // Only count expenses (negative purchaseCost) toward the budget
       const expensesThisMonth = currentMonthPurchases.filter(p => p.purchaseCost < 0);
       const totalSpent = expensesThisMonth.reduce((sum, p) => sum + Math.abs(p.purchaseCost || 0), 0);
       const remainingBudget = user.totalMonthlyBudget - totalSpent;

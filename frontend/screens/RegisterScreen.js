@@ -14,7 +14,6 @@ import CustomInput from '../components/common/CustomInput';
 import CustomButton from '../components/common/CustomButton';
 import { colors, spacing, typography } from '../theme/colors';
 
-// Test account information
 const TEST_ACCOUNT = {
   name: 'Test User',
   email: 'test@example.com',
@@ -98,7 +97,7 @@ const RegisterScreen = ({ navigation }) => {
       };
 
       try {
-        const response = await fetch('http://localhost:5001/api/data', {
+        const response = await fetch('http://192.168.55.153:5001/api/data', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

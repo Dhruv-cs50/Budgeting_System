@@ -52,16 +52,59 @@ A mobile application built with React Native for personal finance management.
 
 ```
 frontend/
-├── assets/         # Images, fonts, and other static assets
-├── components/     # Reusable UI components
-├── screens/        # Application screens
-├── theme/         # Theme configuration and styles
-└── App.js         # Main application component
+├── assets/
+├── components/
+├── screens/
+├── theme/
+└── App.js
 ```
+
+## Running the Application
+
+### 1. Start the Backend
+
+1. Open a terminal and navigate to the `backend` directory:
+   ```bash
+   cd backend
+   ```
+2. Create and activate a virtual environment:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+3. Install the required dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Start the Flask backend server:
+   ```bash
+   python3 app.py
+   ```
+
+### 2. Start the Frontend
+
+1. Open a new terminal and navigate to the `frontend` directory:
+   ```bash
+   cd frontend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   # or
+   yarn install
+   ```
+3. Start the Expo development server:
+   ```bash
+   npx expo start --clear
+   ```
+4. Use the Expo CLI to open the app:
+   - Press `i` to open in the iOS simulator
+   - Press `a` to open in the Android emulator
+   - Scan the QR code with Expo Go on your mobile device
 
 ## API Integration
 
-The frontend communicates with the backend API at `http://localhost:5001` for:
+The frontend communicates with the backend API at `http://192.168.55.153:5001` for:
 - User authentication
 - Transaction management
 - Goal tracking

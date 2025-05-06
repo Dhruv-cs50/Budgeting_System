@@ -35,7 +35,7 @@ const ProfileScreen = ({ navigation }) => {
       try {
         const userEmail = await AsyncStorage.getItem('userEmail');
         if (!userEmail) return;
-        const res = await fetch('http://172.20.205.147:5001/users/email/' + encodeURIComponent(userEmail));
+        const res = await fetch('http://192.168.55.153:5001/users/email/' + encodeURIComponent(userEmail));
         const user = await res.json();
         if (user) {
           setFormData({
@@ -134,7 +134,7 @@ const ProfileScreen = ({ navigation }) => {
         language: formData.language,
       };
       try {
-        const response = await fetch(`http://172.20.205.147:5001/users/email/${encodeURIComponent(formData.email)}`, {
+        const response = await fetch(`http://192.168.55.153:5001/users/email/${encodeURIComponent(formData.email)}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',

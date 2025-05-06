@@ -73,7 +73,7 @@ const AddGoalScreen = ({ navigation }) => {
       };
 
       try {
-        const response = await fetch('http://localhost:5001/api/goals', {
+        const response = await fetch('http://192.168.55.153:5001/api/goals', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
