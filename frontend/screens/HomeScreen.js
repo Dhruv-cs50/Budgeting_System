@@ -7,11 +7,15 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  Modal,
+  TextInput,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import CustomButton from '../components/common/CustomButton';
 import { colors, spacing, typography } from '../theme/colors';
-import api from '../services/api';
+import api, { API_BASE_URL } from '../services/api';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -33,6 +37,10 @@ const HomeScreen = ({ navigation }) => {
   const [error, setError] = useState(null);
   const [isEmpty, setIsEmpty] = useState(false);
   const nav = useNavigation();
+  const [editBalanceVisible, setEditBalanceVisible] = useState(false);
+  const [newBalance, setNewBalance] = useState('');
+  const [editBudgetVisible, setEditBudgetVisible] = useState(false);
+  const [newBudget, setNewBudget] = useState('');
 
   const fetchUserDataByEmail = useCallback(async (email) => {
     setLoading(true);
@@ -102,6 +110,69 @@ const HomeScreen = ({ navigation }) => {
     });
     return unsubscribe;
   }, [nav, fetchUserDataByEmail]);
+
+  const handleEditBalance = () => {
+    setNewBalance(userData.balance?.toString() || '');
+    setEditBalanceVisible(true);
+  };
+
+  const handleSaveBalance = async () => {
+    try {
+      const email = await AsyncStorage.getItem('userEmail');
+      await fetch(`${API_BASE_URL}/users/email/${encodeURIComponent(email)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentBalance: parseFloat(newBalance) }),
+      });
+      setEditBalanceVisible(false);
+      fetchUserDataByEmail(email);
+    } catch (e) {
+      alert('Failed to update balance.');
+    }
+  };
+
+  const handleEditBudget = () => {
+    setNewBudget(userData.monthlyBudget?.toString() || '');
+    setEditBudgetVisible(true);
+  };
+
+  const handleSaveBudget = async () => {
+    const parsedBudget = parseFloat(newBudget);
+    if (isNaN(parsedBudget)) {
+      alert('Please enter a valid number for the budget.');
+      return;
+    }
+
+    const email = await AsyncStorage.getItem('userEmail');
+    if (!email) {
+      alert('User email not found. Please log in again.');
+      return;
+    }
+
+    const url = `${API_BASE_URL}/users/email/${encodeURIComponent(email)}`;
+    const payload = { totalMonthlyBudget: parsedBudget };
+    console.log('PATCH URL:', url);
+    console.log('Payload:', payload);
+
+    try {
+      const res = await fetch(url, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        console.error('Failed to update budget:', data);
+        alert('Failed to update monthly budget.');
+      } else {
+        setEditBudgetVisible(false);
+        fetchUserDataByEmail(email);
+      }
+    } catch (e) {
+      console.error('Network or server error:', e);
+      alert('Network or server error. Please try again.');
+    }
+  };
 
   const renderTransactionItem = (transaction) => (
     <TouchableOpacity
@@ -198,14 +269,28 @@ const HomeScreen = ({ navigation }) => {
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>
           <View style={styles.balanceCard}>
-            <Text style={styles.balanceLabel}>Current Balance</Text>
-            <Text style={styles.balanceAmount}>${Number(userData.balance || 0).toFixed(2)}</Text>
+            <View>
+              <Text style={styles.balanceLabel}>Current Balance</Text>
+              <Text style={styles.balanceAmount}>${Number(userData.balance || 0).toFixed(2)}</Text>
+            </View>
           </View>
           <View style={styles.budgetCard}>
-            <Text style={styles.budgetTitle}>Monthly Budget</Text>
-            <Text style={styles.budgetAmount}>
-              ${Number(userData.remainingBudget || 0).toFixed(2)} left / ${Number(userData.monthlyBudget || 0).toFixed(2)}
-            </Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View>
+                <Text style={styles.budgetTitle}>Monthly Budget</Text>
+                <Text style={styles.budgetAmount}>
+                  ${Number(userData.remainingBudget || 0).toFixed(2)} left / ${Number(userData.monthlyBudget || 0).toFixed(2)}
+                </Text>
+              </View>
+              <CustomButton
+                title="Edit"
+                size="small"
+                variant="primary"
+                style={{ marginLeft: spacing.md, backgroundColor: colors.primary.main }}
+                textStyle={{ color: '#fff', fontWeight: 'bold' }}
+                onPress={handleEditBudget}
+              />
+            </View>
             <View style={styles.progressBar}>
               <View
                 style={[
@@ -220,14 +305,68 @@ const HomeScreen = ({ navigation }) => {
           <Text style={styles.sectionTitle}>Spending Categories</Text>
           {userData.spendingCategories.map(renderCategoryItem)}
         </View>
-        <View style={styles.fabContainer}>
-          <CustomButton
-            title="Add Transaction"
-            onPress={() => navigation.navigate('AddTransaction')}
-            size="large"
-          />
-        </View>
       </ScrollView>
+      <View style={styles.fabContainer} pointerEvents="box-none">
+        <CustomButton
+          title="Add Transaction"
+          onPress={() => navigation.navigate('AddTransaction')}
+          size="large"
+          style={styles.fabButton}
+          textStyle={styles.fabButtonText}
+        />
+      </View>
+      {}
+      <Modal
+        visible={editBalanceVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditBalanceVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Edit Balance</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={newBalance}
+                onChangeText={setNewBalance}
+                keyboardType="numeric"
+                placeholder="Enter new balance"
+              />
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: spacing.md }}>
+                <CustomButton title="Cancel" variant="outline" size="small" onPress={() => setEditBalanceVisible(false)} style={{ marginRight: spacing.sm }} />
+                <CustomButton title="Save" size="small" onPress={handleSaveBalance} />
+              </View>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+      {/* Edit Monthly Budget Modal */}
+      <Modal
+        visible={editBudgetVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditBudgetVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Edit Monthly Budget</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={newBudget}
+                onChangeText={setNewBudget}
+                keyboardType="numeric"
+                placeholder="Enter new monthly budget"
+              />
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: spacing.md }}>
+                <CustomButton title="Cancel" variant="outline" size="small" onPress={() => setEditBudgetVisible(false)} style={{ marginRight: spacing.sm }} />
+                <CustomButton title="Save" size="small" onPress={handleSaveBudget} />
+              </View>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </LinearGradient>
   );
 };
@@ -404,9 +543,61 @@ const styles = StyleSheet.create({
   },
   fabContainer: {
     position: 'absolute',
-    bottom: spacing.xl,
+    bottom: spacing.xl * 2,
     left: spacing.lg,
     right: spacing.lg,
+    alignItems: 'center',
+    zIndex: 100,
+    elevation: 8,
+    pointerEvents: 'box-none',
+  },
+  fabButton: {
+    backgroundColor: colors.primary.main,
+    borderRadius: 32,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  fabButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: typography.h3.fontSize,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: colors.background.main,
+    borderRadius: spacing.md,
+    padding: spacing.xl,
+    width: '80%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalTitle: {
+    fontSize: typography.h2.fontSize,
+    fontWeight: 'bold',
+    color: colors.text.primary,
+    marginBottom: spacing.md,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: colors.primary.light,
+    borderRadius: spacing.sm,
+    padding: spacing.sm,
+    fontSize: typography.body.fontSize,
+    color: colors.text.primary,
+    backgroundColor: colors.background.light,
   },
 });
 

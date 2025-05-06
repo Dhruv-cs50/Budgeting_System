@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-// Updated to match backend's actual IP and port
-const API_BASE_URL = 'http://192.168.4.63:5001';
+const API_BASE_URL = 'http://172.20.205.147:5001';
 
 const api = {
   getUser: async (userId) => {
@@ -65,4 +64,5 @@ const api = {
   }
 };
 
-export default api; 
+export default api;
+export { API_BASE_URL }; 

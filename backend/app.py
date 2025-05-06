@@ -1,5 +1,5 @@
 from routes import all_users
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from routes import purchase, deposit, user, transactions
 import json
@@ -38,6 +38,29 @@ def get_user_by_email(email):
         if user.get('email') == decoded_email:
             return jsonify(user)
     return jsonify({'error': 'User not found'}), 404
+
+@app.route('/users/email/<email>', methods=['PATCH'])
+def update_user_by_email(email):
+    decoded_email = urllib.parse.unquote(email)
+    update_data = request.json
+    print("PATCH update for:", decoded_email, update_data) 
+    with open('data.json', 'r') as f:
+        users = json.load(f)
+    updated = False
+    for user in users:
+        if user.get('email') == decoded_email:
+            print("Found user:", user) 
+            user.update(update_data)
+            updated = True
+            break
+    if updated:
+        with open('data.json', 'w') as f:
+            json.dump(users, f, indent=4)
+        print("User updated successfully.")
+        return jsonify({'message': 'User updated successfully'})
+    else:
+        print("User not found for PATCH.") 
+        return jsonify({'error': 'User not found'}), 404
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", debug=True, port=5001)
