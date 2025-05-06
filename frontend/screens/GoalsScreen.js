@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,33 +11,17 @@ import { LinearGradient } from 'expo-linear-gradient';
 import DateTimePicker from 'react-native-modal-datetime-picker';
 import CustomButton from '../components/common/CustomButton';
 import { colors, spacing, typography } from '../theme/colors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 
-const mockGoals = [
-  {
-    id: 1,
-    title: 'Emergency Fund',
-    targetAmount: 10000,
-    currentAmount: 5000,
-    targetDate: '2025-12-31',
-    category: 'Savings',
-  },
-  {
-    id: 2,
-    title: 'New Car',
-    targetAmount: 25000,
-    currentAmount: 10000,
-    targetDate: '2025-06-30',
-    category: 'Vehicle',
-  },
-  {
-    id: 3,
-    title: 'Vacation',
-    targetAmount: 5000,
-    currentAmount: 2000,
-    targetDate: '2025-08-15',
-    category: 'Travel',
-  },
-];
+const BACKEND_URL = 'http://172.20.205.147:5001';
+
+const getUserIdByEmail = async (email) => {
+  const res = await fetch(`${BACKEND_URL}/users/email/${encodeURIComponent(email)}`);
+  if (!res.ok) throw new Error('User not found');
+  const user = await res.json();
+  return user.user_id || user.userId;
+};
 
 const GoalsScreen = () => {
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
@@ -48,6 +32,30 @@ const GoalsScreen = () => {
     targetDate: new Date(),
     category: '',
   });
+  const [goals, setGoals] = useState([]);
+
+  const fetchGoals = async () => {
+    try {
+      const email = await AsyncStorage.getItem('userEmail');
+      if (!email) throw new Error('User email not found');
+      const userId = await getUserIdByEmail(email);
+      const response = await fetch(`${BACKEND_URL}/users/${userId}/goals`);
+      const data = await response.json();
+      if (data.goals) {
+        setGoals(data.goals);
+      } else {
+        setGoals([]);
+      }
+    } catch (error) {
+      setGoals([]);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchGoals();
+    }, [])
+  );
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -65,7 +73,6 @@ const GoalsScreen = () => {
   const handleDateConfirm = (date) => {
     const minDate = new Date('2025-04-28');
     if (date < minDate) {
-      // If selected date is before April 28, 2025, set it to April 28, 2025
       setNewGoal(prev => ({
         ...prev,
         targetDate: minDate,
@@ -80,34 +87,37 @@ const GoalsScreen = () => {
   };
 
   const handleAddGoal = async () => {
-    const dataToSend = {
-      title: newGoal.title,
-      targetAmount: newGoal.targetAmount,
-      targetDate: newGoal.targetDate.toISOString(), 
-      category: newGoal.category,
-    };
-
     try {
-      const response = await fetch('http://localhost:5000/api/goals', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dataToSend),
-      });
-
-      if (response.ok) {
-        setIsAddingGoal(false);
-        setNewGoal({
-          title: '',
-          targetAmount: '',
-          targetDate: new Date(),
-          category: '',
-        });
-      } else {
-        const errorData = await response.json();
-        alert('Error: ' + (errorData.message || 'Failed to add goal.'));
+      const email = await AsyncStorage.getItem('userEmail');
+      if (!email) {
+        alert('User email not found. Please log in again.');
+        return;
       }
+      const userId = await getUserIdByEmail(email);
+      const dataToSend = {
+        title: newGoal.title,
+        targetAmount: parseFloat(newGoal.targetAmount),
+        targetDate: newGoal.targetDate.toISOString().split('T')[0],
+        category: newGoal.category,
+        currentAmount: 0
+      };
+      const response = await fetch(`${BACKEND_URL}/users/${userId}/goals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dataToSend)
+      });
+      if (!response.ok) {
+        alert('Failed to add goal');
+        return;
+      }
+      await fetchGoals();
+      setIsAddingGoal(false);
+      setNewGoal({
+        title: '',
+        targetAmount: '',
+        targetDate: new Date(),
+        category: '',
+      });
     } catch (error) {
       alert('Network error: ' + error.message);
     }
@@ -167,6 +177,7 @@ const GoalsScreen = () => {
 
     return (
       <View style={styles.addGoalForm}>
+        <Text style={styles.label}>Goal Title</Text>
         <TextInput
           style={styles.input}
           placeholder="Goal Title"
@@ -174,6 +185,7 @@ const GoalsScreen = () => {
           onChangeText={(text) => setNewGoal(prev => ({ ...prev, title: text }))}
           placeholderTextColor={colors.text.secondary}
         />
+        <Text style={styles.label}>Target Amount</Text>
         <TextInput
           style={styles.input}
           placeholder="Target Amount"
@@ -182,6 +194,7 @@ const GoalsScreen = () => {
           keyboardType="numeric"
           placeholderTextColor={colors.text.secondary}
         />
+        <Text style={styles.label}>Target Date</Text>
         <TouchableOpacity
           style={styles.dateButton}
           onPress={() => setDatePickerVisible(true)}
@@ -190,19 +203,11 @@ const GoalsScreen = () => {
             {formatDate(newGoal.targetDate)}
           </Text>
         </TouchableOpacity>
-        <TextInput
-          style={styles.input}
-          placeholder="Category"
-          value={newGoal.category}
-          onChangeText={(text) => setNewGoal(prev => ({ ...prev, category: text }))}
-          placeholderTextColor={colors.text.secondary}
-        />
         <View style={styles.formButtons}>
           <CustomButton
             title="Cancel"
             onPress={() => setIsAddingGoal(false)}
-            variant="outline"
-            style={styles.cancelButton}
+            style={styles.saveButton}
           />
           <CustomButton
             title="Save Goal"
@@ -224,7 +229,7 @@ const GoalsScreen = () => {
           <Text style={styles.title}>Financial Goals</Text>
         </View>
 
-        {mockGoals.map(renderGoalCard)}
+        {goals.map(renderGoalCard)}
         {renderAddGoalForm()}
       </ScrollView>
 
@@ -360,13 +365,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  cancelButton: {
-    flex: 1,
-    marginRight: spacing.sm,
-  },
   saveButton: {
     flex: 1,
     marginLeft: spacing.sm,
+  },
+  label: {
+    fontSize: typography.caption.fontSize,
+    fontWeight: 'bold',
+    color: colors.text.primary,
+    marginBottom: spacing.xs,
   },
 });
 

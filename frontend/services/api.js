@@ -61,6 +61,31 @@ const api = {
       console.error('Error fetching deposits:', error);
       throw error;
     }
+  },
+
+  deleteTransaction: async (purchaseId, userId) => {
+    try {
+      const response = await axios.delete(`${API_BASE_URL}/api/data/purchase/${userId}`, {
+        data: { purchaseId },
+        headers: { 'Content-Type': 'application/json' },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      throw error;
+    }
+  },
+
+  updateGoalAmount: async (userId, goalId, amountToAdd) => {
+    try {
+      const response = await axios.patch(`${API_BASE_URL}/users/${userId}/goals/${goalId}`, {
+        amountToAdd,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating goal amount:', error);
+      throw error;
+    }
   }
 };
 

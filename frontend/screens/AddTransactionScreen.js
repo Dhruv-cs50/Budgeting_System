@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,8 @@ import CustomButton from '../components/common/CustomButton';
 import { colors, spacing, typography } from '../theme/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
+import { useFocusEffect } from '@react-navigation/native';
+import { Picker } from '@react-native-picker/picker';
 
 const categories = [
   'Food',
@@ -28,6 +30,12 @@ const categories = [
   'Other',
 ];
 
+const mockGoals = [
+  { id: 1, title: 'Emergency Fund' },
+  { id: 2, title: 'New Car' },
+  { id: 3, title: 'Vacation' },
+];
+
 const AddTransactionScreen = ({ navigation }) => {
   const [formData, setFormData] = useState({
     amount: '',
@@ -38,6 +46,22 @@ const AddTransactionScreen = ({ navigation }) => {
   });
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const [errors, setErrors] = useState({});
+  const [selectedGoalId, setSelectedGoalId] = useState('');
+  const [goals, setGoals] = useState([]);
+
+  useEffect(() => {
+    const fetchGoals = async () => {
+      try {
+        const email = await AsyncStorage.getItem('userEmail');
+        const user = await api.getUserByEmail(email);
+        const userGoals = user.financialGoals || [];
+        setGoals(userGoals);
+      } catch (e) {
+        setGoals([]);
+      }
+    };
+    fetchGoals();
+  }, []);
 
   const validateForm = () => {
     const newErrors = {};
@@ -46,15 +70,12 @@ const AddTransactionScreen = ({ navigation }) => {
     } else if (isNaN(formData.amount)) {
       newErrors.amount = 'Amount must be a number';
     }
-
-    if (!formData.category) {
+    if (formData.type === 'expense' && !formData.category) {
       newErrors.category = 'Category is required';
     }
-
     if (!formData.date) {
       newErrors.date = 'Date is required';
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -84,29 +105,71 @@ const AddTransactionScreen = ({ navigation }) => {
     if (validateForm()) {
       try {
         const email = await AsyncStorage.getItem('userEmail');
+        if (!email) {
+          alert('User email not found. Please log in again.');
+          return;
+        }
         const user = await api.getUserByEmail(email);
         const userId = user.user_id || user.userId || user.id;
         if (!userId) {
           alert('User not found');
           return;
         }
+        const amount = Math.abs(parseFloat(formData.amount));
         const newTransaction = {
           name: formData.notes || 'Transaction',
-          purchaseCategory: formData.category,
-          purchaseCost: parseFloat(formData.amount),
-          purchaseDate: new Date().toISOString(),
+          purchaseCategory: formData.type === 'expense' ? formData.category : '',
+          purchaseCost: formData.type === 'expense' ? -amount : amount,
+          purchaseDate: formData.date ? new Date(formData.date).toISOString() : new Date().toISOString(),
         };
-        const response = await fetch(`http://192.168.4.63:5001/api/data/purchase/users/${userId}/transactions`, {
+        if (formData.type === 'income' && selectedGoalId !== '' && selectedGoalId !== null && selectedGoalId !== undefined) {
+          newTransaction.goalId = parseInt(selectedGoalId, 10);
+          console.log('Assigning goalId to transaction:', newTransaction.goalId);
+        }
+        console.log('Transaction to add:', newTransaction);
+        const addTxRes = await fetch(`http://172.20.205.147:5001/api/data/purchase/users/${userId}/transactions`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newTransaction),
         });
-        if (response.ok) {
-          navigation.goBack();
-        } else {
+        if (!addTxRes.ok) {
+          const errData = await addTxRes.json();
+          console.error('Failed to add transaction:', errData);
           alert('Error: Failed to add transaction.');
+          return;
         }
+        const addTxData = await addTxRes.json();
+        console.log('Transaction added:', addTxData);
+        if (formData.type === 'income' && selectedGoalId !== '' && selectedGoalId !== null && selectedGoalId !== undefined) {
+          const goalId = parseInt(selectedGoalId, 10);
+          console.log('Patching goal:', { userId, goalId, amount });
+          await api.updateGoalAmount(userId, goalId, amount);
+        }
+        if (formData.type === 'income') {
+          const newBalance = (user.currentBalance || 0) + amount;
+          const url = `http://172.20.205.147:5001/users/email/${encodeURIComponent(email)}`;
+          const payload = { currentBalance: newBalance };
+          try {
+            const patchRes = await fetch(url, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+            const patchData = await patchRes.json();
+            if (!patchRes.ok) {
+              console.error('Failed to update balance:', patchData);
+              alert('Failed to update balance after income transaction.');
+              return;
+            }
+          } catch (e) {
+            console.error('Network or server error (PATCH):', e);
+            alert('Network or server error while updating balance.');
+            return;
+          }
+        }
+        navigation.goBack();
       } catch (error) {
+        console.error('Network or server error:', error);
         alert('Network error: ' + error.message);
       }
     }
@@ -121,7 +184,7 @@ const AddTransactionScreen = ({ navigation }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: spacing.xl * 4 }]}>
           <View style={styles.header}>
             <Text style={styles.title}>Add Transaction</Text>
             <Text style={styles.subtitle}>Enter your transaction details</Text>
@@ -172,33 +235,35 @@ const AddTransactionScreen = ({ navigation }) => {
               error={errors.amount}
             />
 
-            <View style={styles.categoryContainer}>
-              <Text style={styles.label}>Category</Text>
-              <View style={styles.categoryGrid}>
-                {categories.map((category) => (
-                  <TouchableOpacity
-                    key={category}
-                    style={[
-                      styles.categoryButton,
-                      formData.category === category && styles.categoryButtonActive,
-                    ]}
-                    onPress={() => handleChange('category', category)}
-                  >
-                    <Text
+            {formData.type === 'expense' && (
+              <View style={styles.categoryContainer}>
+                <Text style={styles.label}>Category</Text>
+                <View style={styles.categoryGrid}>
+                  {categories.map((category) => (
+                    <TouchableOpacity
+                      key={category}
                       style={[
-                        styles.categoryButtonText,
-                        formData.category === category && styles.categoryButtonTextActive,
+                        styles.categoryButton,
+                        formData.category === category && styles.categoryButtonActive,
                       ]}
+                      onPress={() => handleChange('category', category)}
                     >
-                      {category}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                      <Text
+                        style={[
+                          styles.categoryButtonText,
+                          formData.category === category && styles.categoryButtonTextActive,
+                        ]}
+                      >
+                        {category}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                {errors.category && (
+                  <Text style={styles.errorText}>{errors.category}</Text>
+                )}
               </View>
-              {errors.category && (
-                <Text style={styles.errorText}>{errors.category}</Text>
-              )}
-            </View>
+            )}
 
             <TouchableOpacity
               style={styles.dateButton}
@@ -217,6 +282,44 @@ const AddTransactionScreen = ({ navigation }) => {
               multiline
               numberOfLines={4}
             />
+
+            {formData.type === 'income' && (
+              <View style={{ marginBottom: spacing.lg }}>
+                <Text style={styles.label}>Assign to Goal (optional)</Text>
+                <TouchableOpacity
+                  style={{
+                    padding: spacing.md,
+                    backgroundColor: selectedGoalId === '' ? colors.primary.light : colors.background.dark,
+                    borderRadius: spacing.md,
+                    marginBottom: spacing.sm,
+                  }}
+                  onPress={() => setSelectedGoalId('')}
+                >
+                  <Text style={{ color: selectedGoalId === '' ? colors.text.light : colors.text.primary }}>
+                    -- None --
+                  </Text>
+                </TouchableOpacity>
+                {goals.map(goal => (
+                  <TouchableOpacity
+                    key={goal.goalId}
+                    style={{
+                      padding: spacing.md,
+                      backgroundColor: selectedGoalId === goal.goalId ? colors.primary.light : colors.background.dark,
+                      borderRadius: spacing.md,
+                      marginBottom: spacing.sm,
+                    }}
+                    onPress={() => {
+                      console.log('Button selected value:', goal.goalId);
+                      setSelectedGoalId(goal.goalId);
+                    }}
+                  >
+                    <Text style={{ color: selectedGoalId === goal.goalId ? colors.text.light : colors.text.primary }}>
+                      {goal.title}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
 
             <CustomButton
               title="Add Transaction"

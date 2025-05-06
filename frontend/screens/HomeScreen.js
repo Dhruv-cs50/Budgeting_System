@@ -64,12 +64,14 @@ const HomeScreen = ({ navigation }) => {
         return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
       });
     
-      const totalSpent = currentMonthPurchases.reduce((sum, p) => sum + (p.purchaseCost || 0), 0);
+      // Only count expenses (negative purchaseCost) toward the budget
+      const expensesThisMonth = currentMonthPurchases.filter(p => p.purchaseCost < 0);
+      const totalSpent = expensesThisMonth.reduce((sum, p) => sum + Math.abs(p.purchaseCost || 0), 0);
       const remainingBudget = user.totalMonthlyBudget - totalSpent;
       const spendingByCategory = CATEGORIES.map(cat => {
-        const amount = currentMonthPurchases
+        const amount = expensesThisMonth
           .filter(p => p.purchaseCategory === cat)
-          .reduce((sum, p) => sum + (p.purchaseCost || 0), 0);
+          .reduce((sum, p) => sum + Math.abs(p.purchaseCost || 0), 0);
         return { name: cat, amount };
       });
       setUserData({
@@ -77,7 +79,8 @@ const HomeScreen = ({ navigation }) => {
         monthlyBudget: user.totalMonthlyBudget,
         spent: totalSpent,
         remainingBudget,
-        spendingCategories: spendingByCategory
+        spendingCategories: spendingByCategory,
+        transactions: purchases.slice().sort((a, b) => new Date(b.purchaseDate) - new Date(a.purchaseDate)),
       });
     } catch (err) {
       setError('Failed to load user data. Please check your connection or try again.');
@@ -103,13 +106,6 @@ const HomeScreen = ({ navigation }) => {
       getUserEmailAndFetch();
     }, [fetchUserDataByEmail])
   );
-
-  useEffect(() => {
-    const unsubscribe = nav.addListener('tabPress', () => {
-      AsyncStorage.getItem('userEmail').then(email => fetchUserDataByEmail(email));
-    });
-    return unsubscribe;
-  }, [nav, fetchUserDataByEmail]);
 
   const handleEditBalance = () => {
     setNewBalance(userData.balance?.toString() || '');
@@ -270,7 +266,7 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.header}>
           <View style={styles.balanceCard}>
             <View>
-              <Text style={styles.balanceLabel}>Current Balance</Text>
+              <Text style={styles.balanceLabel}>Checking Account Balance</Text>
               <Text style={styles.balanceAmount}>${Number(userData.balance || 0).toFixed(2)}</Text>
             </View>
           </View>
@@ -305,6 +301,20 @@ const HomeScreen = ({ navigation }) => {
           <Text style={styles.sectionTitle}>Spending Categories</Text>
           {userData.spendingCategories.map(renderCategoryItem)}
         </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Recent Transactions</Text>
+          {userData.transactions && userData.transactions.length > 0 ? (
+            userData.transactions.slice(0, 5).map((transaction, idx) => renderTransactionItem({
+              ...transaction,
+              title: transaction.name || 'Transaction',
+              category: transaction.purchaseCategory || '',
+              amount: transaction.purchaseCost || 0,
+              date: transaction.purchaseDate ? new Date(transaction.purchaseDate).toLocaleDateString() : '',
+            }))
+          ) : (
+            <Text style={styles.emptyText}>No transactions yet.</Text>
+          )}
+        </View>
       </ScrollView>
       <View style={styles.fabContainer} pointerEvents="box-none">
         <CustomButton
@@ -315,7 +325,6 @@ const HomeScreen = ({ navigation }) => {
           textStyle={styles.fabButtonText}
         />
       </View>
-      {}
       <Modal
         visible={editBalanceVisible}
         transparent
@@ -341,7 +350,6 @@ const HomeScreen = ({ navigation }) => {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-      {/* Edit Monthly Budget Modal */}
       <Modal
         visible={editBudgetVisible}
         transparent

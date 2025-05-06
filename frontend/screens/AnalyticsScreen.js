@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,11 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Path, G } from 'react-native-svg';
+import Svg, { Path, G, Circle } from 'react-native-svg';
 import { colors, spacing, typography } from '../theme/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
+import { useFocusEffect } from '@react-navigation/native';
 
 const CATEGORIES = [
   'Food',
@@ -31,6 +32,18 @@ const CHART_RADIUS = CHART_WIDTH / 2.5;
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+const CHART_COLORS = [
+  '#FF6B6B', // Red
+  '#4ECDC4', // Teal
+  '#45B7D1', // Blue
+  '#96CEB4', // Green
+  '#FFEEAD', // Yellow
+  '#D4A5A5', // Pink
+  '#9B786F', // Brown
+  '#A8E6CF', // Mint
+  '#FFD3B6', // Orange
+];
+
 const AnalyticsScreen = () => {
   const [monthlySpending, setMonthlySpending] = useState([]);
   const [categorySpending, setCategorySpending] = useState([]);
@@ -38,72 +51,105 @@ const AnalyticsScreen = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchAndProcessData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const email = await AsyncStorage.getItem('userEmail');
-        if (!email) throw new Error('No user email found. Please log in again.');
-        const user = await api.getUserByEmail(email);
-        if (!user || user.error) throw new Error('User not found. Please log in again.');
-        const purchases = user.purchases || [];
-        // --- Monthly Spending (last 4 months) ---
-        const now = new Date();
-        const monthlyTotals = Array(12).fill(0);
-        purchases.forEach(tx => {
-          if (tx.purchaseDate) {
-            const date = new Date(tx.purchaseDate);
-            const monthIdx = date.getMonth();
-            if (date.getFullYear() === now.getFullYear()) {
-              monthlyTotals[monthIdx] += Number(tx.purchaseCost) || 0;
-            }
+  const fetchAndProcessData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const email = await AsyncStorage.getItem('userEmail');
+      if (!email) throw new Error('No user email found. Please log in again.');
+      
+      const user = await api.getUserByEmail(email);
+      if (!user || user.error) throw new Error('User not found. Please log in again.');
+      
+      const purchases = user.purchases || [];
+      console.log('Fetched purchases for analytics:', purchases.length);
+
+      // --- Monthly Spending (last 4 months) ---
+      const now = new Date();
+      const monthlyTotals = Array(12).fill(0);
+      purchases.forEach(tx => {
+        if (tx.purchaseDate) {
+          const date = new Date(tx.purchaseDate);
+          const monthIdx = date.getMonth();
+          // Only count expenses (negative purchaseCost) for spending charts
+          if (date.getFullYear() === now.getFullYear() && tx.purchaseCost < 0) {
+            monthlyTotals[monthIdx] += Math.abs(Number(tx.purchaseCost)) || 0;
           }
-        });
-        const currentMonth = now.getMonth();
-        const monthsToShow = 4;
-        const barData = [];
-        for (let i = monthsToShow - 1; i >= 0; i--) {
-          const idx = (currentMonth - i + 12) % 12;
-          barData.push({
-            month: MONTHS[idx],
-            amount: monthlyTotals[idx],
-          });
         }
-        setMonthlySpending(barData);
-        // --- Category Spending (current month) ---
-        const currentMonthPurchases = purchases.filter(p => {
-          const d = new Date(p.purchaseDate);
-          return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      });
+
+      const currentMonth = now.getMonth();
+      const monthsToShow = 4;
+      const barData = [];
+      for (let i = monthsToShow - 1; i >= 0; i--) {
+        const idx = (currentMonth - i + 12) % 12;
+        barData.push({
+          month: MONTHS[idx],
+          amount: monthlyTotals[idx],
         });
-        const categoryTotals = {};
-        CATEGORIES.forEach(cat => { categoryTotals[cat] = 0; });
-        currentMonthPurchases.forEach(tx => {
-          const cat = tx.purchaseCategory || 'Other';
-          if (!categoryTotals.hasOwnProperty(cat)) categoryTotals[cat] = 0;
-          categoryTotals[cat] += Number(tx.purchaseCost) || 0;
-        });
-        const total = Object.values(categoryTotals).reduce((a, b) => a + b, 0);
-        const pieData = CATEGORIES.map(cat => ({
-          category: cat,
-          amount: categoryTotals[cat],
-          percentage: total ? Math.round((categoryTotals[cat] / total) * 100) : 0,
-        }));
-        setCategorySpending(pieData);
-        // --- Savings ---
-        setSavings({
-          current: user.currentBalance || 0,
-          goal: user.savingsGoal || 0,
-          monthlyTarget: user.monthlySavingsTarget || 0,
-        });
-      } catch (e) {
-        setError(e.message || 'Failed to load analytics data.');
-      } finally {
-        setLoading(false);
       }
-    };
-    fetchAndProcessData();
+      setMonthlySpending(barData);
+
+      // --- Category Spending (current month) ---
+      const currentMonthPurchases = purchases.filter(p => {
+        const d = new Date(p.purchaseDate);
+        const isCurrentMonth = d.getMonth() === now.getMonth() && 
+                             d.getFullYear() === now.getFullYear();
+        const isExpense = p.purchaseCost < 0;
+        console.log('Purchase:', {
+          date: p.purchaseDate,
+          isCurrentMonth,
+          isExpense,
+          cost: p.purchaseCost,
+          category: p.purchaseCategory
+        });
+        return isCurrentMonth && isExpense;
+      });
+
+      console.log('Current month purchases:', currentMonthPurchases);
+
+      const categoryTotals = {};
+      CATEGORIES.forEach(cat => { categoryTotals[cat] = 0; });
+      
+      currentMonthPurchases.forEach(tx => {
+        const cat = tx.purchaseCategory || 'Other';
+        if (!categoryTotals.hasOwnProperty(cat)) categoryTotals[cat] = 0;
+        categoryTotals[cat] += Math.abs(Number(tx.purchaseCost)) || 0;
+      });
+
+      console.log('Category totals:', categoryTotals);
+
+      const total = Object.values(categoryTotals).reduce((a, b) => a + b, 0);
+      console.log('Total spending:', total);
+
+      const pieData = CATEGORIES.map(cat => ({
+        category: cat,
+        amount: categoryTotals[cat],
+        percentage: total ? Math.round((categoryTotals[cat] / total) * 100) : 0,
+      })).filter(item => item.amount > 0); // Only show categories with spending
+
+      setCategorySpending(pieData);
+
+      // --- Savings ---
+      setSavings({
+        current: user.currentBalance || 0,
+        goal: user.savingsGoal || 0,
+        monthlyTarget: user.monthlySavingsTarget || 0,
+      });
+    } catch (e) {
+      console.error('Error loading analytics:', e);
+      setError(e.message || 'Failed to load analytics data.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      console.log('Analytics screen focused, refreshing data...');
+      fetchAndProcessData();
+    }, [fetchAndProcessData])
+  );
 
   const renderBarChart = () => {
     if (!monthlySpending.length) return null;
@@ -127,40 +173,69 @@ const AnalyticsScreen = () => {
   };
 
   const renderPieChart = () => {
-    const total = categorySpending.reduce((sum, item) => sum + item.percentage, 0);
-    let startAngle = 0;
-    const createPieSegment = (percentage) => {
-      const angle = (percentage / 100) * 2 * Math.PI;
-      const endAngle = startAngle + angle;
-      const x1 = CHART_RADIUS + CHART_RADIUS * Math.cos(startAngle);
-      const y1 = CHART_RADIUS + CHART_RADIUS * Math.sin(startAngle);
-      const x2 = CHART_RADIUS + CHART_RADIUS * Math.cos(endAngle);
-      const y2 = CHART_RADIUS + CHART_RADIUS * Math.sin(endAngle);
-      const largeArcFlag = angle > Math.PI ? 1 : 0;
-      const path = `
-        M ${CHART_RADIUS} ${CHART_RADIUS}
-        L ${x1} ${y1}
-        A ${CHART_RADIUS} ${CHART_RADIUS} 0 ${largeArcFlag} 1 ${x2} ${y2}
-        Z
-      `;
+    if (!categorySpending.length) {
+      console.log('No category spending data to display');
+      return null;
+    }
+
+    console.log('Category spending data:', categorySpending);
+    const total = categorySpending.reduce((sum, item) => sum + item.amount, 0);
+    console.log('Total spending:', total);
+
+    let startAngle = -Math.PI / 2; // Start from top (12 o'clock position)
+    
+    const createPieSegment = (amount) => {
+      const percentage = (amount / total) * 100;
+      console.log('Creating segment:', { amount, percentage, startAngle });
+      
+      // Calculate the segment's angle
+      const segmentAngle = (percentage / 100) * 2 * Math.PI;
+      const endAngle = startAngle + segmentAngle;
+      
+      // Calculate start and end points
+      const startX = CHART_RADIUS + Math.cos(startAngle) * CHART_RADIUS;
+      const startY = CHART_RADIUS + Math.sin(startAngle) * CHART_RADIUS;
+      const endX = CHART_RADIUS + Math.cos(endAngle) * CHART_RADIUS;
+      const endY = CHART_RADIUS + Math.sin(endAngle) * CHART_RADIUS;
+      
+      // Create the SVG arc path
+      const largeArcFlag = percentage > 50 ? 1 : 0;
+      const pathData = [
+        'M', CHART_RADIUS, CHART_RADIUS,
+        'L', startX, startY,
+        'A', CHART_RADIUS, CHART_RADIUS, 0, largeArcFlag, 1, endX, endY,
+        'Z'
+      ].join(' ');
+      
+      // Update start angle for next segment
       startAngle = endAngle;
-      return path;
+      
+      return pathData;
     };
+
     return (
       <View style={styles.chartContainer}>
         <Text style={styles.chartTitle}>Spending by Category</Text>
         <View style={styles.pieChartContainer}>
           <Svg width={CHART_RADIUS * 2} height={CHART_RADIUS * 2}>
-            <G>
-              {categorySpending.map((item, index) => (
+            {categorySpending.length === 1 ? (
+              <Circle
+                cx={CHART_RADIUS}
+                cy={CHART_RADIUS}
+                r={CHART_RADIUS}
+                fill={CHART_COLORS[0]}
+              />
+            ) : (
+              categorySpending.map((item, index) => (
                 <Path
                   key={index}
-                  d={createPieSegment(item.percentage)}
-                  fill={colors.primary.light}
-                  opacity={0.4 + (index * 0.15)}
+                  d={createPieSegment(item.amount)}
+                  fill={CHART_COLORS[index % CHART_COLORS.length]}
+                  stroke="white"
+                  strokeWidth="1"
                 />
-              ))}
-            </G>
+              ))
+            )}
           </Svg>
         </View>
         <View style={styles.legend}>
@@ -169,14 +244,11 @@ const AnalyticsScreen = () => {
               <View
                 style={[
                   styles.legendColor,
-                  {
-                    backgroundColor: colors.primary.light,
-                    opacity: 0.4 + (index * 0.15),
-                  },
+                  { backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }
                 ]}
               />
               <Text style={styles.legendText}>
-                {item.category} ({item.percentage}%)
+                {item.category}: ${item.amount.toFixed(2)} ({Math.round((item.amount / total) * 100)}%)
               </Text>
             </View>
           ))}

@@ -44,17 +44,7 @@
                 "depositAmount": 3225.23
             }
         ],
-        "financialGoals": [
-            {
-                "goalId": 0,
-                "title": "Emergency Fund",
-                "currentAmount": 500.0,
-                "targetAmount": 1000.0,
-                "targetDate": "2025-12-31",
-                "savingsCategory": "Emergency",
-                "percentageCompleted": 50
-            }
-        ]
+        "financialGoals": []
     },
     {
         "user_id": 1,
@@ -87,17 +77,7 @@
                 "depositAmount": 3225.23
             }
         ],
-        "financialGoals": [
-            {
-                "goalId": 0,
-                "title": "Vacation Fund",
-                "currentAmount": 3000.0,
-                "targetAmount": 5000.0,
-                "targetDate": "2025-08-01",
-                "savingsCategory": "Travel",
-                "percentageCompleted": 60
-            }
-        ]
+        "financialGoals": []
     },
     {
         "fullName": "Samuel P",
@@ -109,31 +89,43 @@
         "phoneNumber": "4089120293",
         "preferredCurrency": "USD",
         "language": "English",
-        "currentBalance": 4000,
+        "currentBalance": 4115,
         "totalMonthlyBudget": 2000,
         "userId": 2,
         "timestamp": "2025-05-03T14:45:32.836434",
         "purchases": [
             {
-                "name": "1",
+                "name": "Boba",
                 "purchaseCategory": "Food",
-                "purchaseCost": 100,
-                "purchaseDate": "2025-05-04T00:39:26.562Z",
+                "purchaseCost": -1000,
+                "purchaseDate": "2025-05-06T00:00:00.000Z",
                 "purchaseId": 0
             },
             {
-                "name": "Car",
-                "purchaseCategory": "Transport",
-                "purchaseCost": 300,
-                "purchaseDate": "2025-05-04T00:39:49.191Z",
+                "name": "Transaction",
+                "purchaseCategory": "",
+                "purchaseCost": 15,
+                "purchaseDate": "2025-05-06T00:00:00.000Z",
                 "purchaseId": 1
             },
             {
-                "name": "Surgery",
-                "purchaseCategory": "Health",
-                "purchaseCost": 1000,
-                "purchaseDate": "2025-05-04T00:40:03.082Z",
+                "name": "Transaction",
+                "purchaseCategory": "",
+                "purchaseCost": 100,
+                "purchaseDate": "2025-05-06T00:00:00.000Z",
+                "goalId": 0,
                 "purchaseId": 2
+            }
+        ],
+        "financialGoals": [
+            {
+                "title": "Car",
+                "targetAmount": 5000,
+                "targetDate": "2025-05-06",
+                "category": "",
+                "currentAmount": 100.0,
+                "goalId": 0,
+                "percentageCompleted": 2
             }
         ]
     }

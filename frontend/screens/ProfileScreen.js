@@ -35,9 +35,8 @@ const ProfileScreen = ({ navigation }) => {
       try {
         const userEmail = await AsyncStorage.getItem('userEmail');
         if (!userEmail) return;
-        const res = await fetch('http://localhost:5001/api/data');
-        const users = await res.json();
-        const user = users.find(u => u.email === userEmail);
+        const res = await fetch('http://172.20.205.147:5001/users/email/' + encodeURIComponent(userEmail));
+        const user = await res.json();
         if (user) {
           setFormData({
             firstName: user.fullName || '',
@@ -125,28 +124,28 @@ const ProfileScreen = ({ navigation }) => {
   const handleSubmit = async () => {
     if (validateForm()) {
       const dataToSend = {
-        firstName: formData.firstName,
+        fullName: formData.firstName,
         email: formData.email,
-        dob: formData.dob,
+        dateOfBirth: formData.dob,
         occupation: formData.occupation,
         monthlyIncome: parseFloat(formData.monthlyIncome),
         phoneNumber: formData.phoneNumber,
-        address: formData.address,
         preferredCurrency: formData.preferredCurrency,
         language: formData.language,
       };
-
       try {
-        const response = await fetch('http://localhost:5001/api/profile', {
-          method: 'POST',
+        const response = await fetch(`http://172.20.205.147:5001/users/email/${encodeURIComponent(formData.email)}`, {
+          method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(dataToSend),
         });
-
         if (response.ok) {
-          navigation.navigate('MainTabs');
+          await fetchProfile();
+          console.log('Exiting edit mode');
+          setIsEditing(false);
+          alert('Profile updated successfully!');
         } else {
           const errorData = await response.json();
           alert('Error: ' + (errorData.message || 'Failed to update profile.'));
@@ -157,8 +156,8 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
-  const renderField = (label, field, placeholder, keyboardType = 'default') => (
-    <View style={styles.fieldContainer}>
+  const renderField = (label, field, placeholder, keyboardType = 'default', box = false) => (
+    <View style={box ? styles.singleFieldBox : styles.fieldContainer}>
       {isEditing ? (
         <CustomInput
           label={label}
@@ -171,7 +170,7 @@ const ProfileScreen = ({ navigation }) => {
       ) : (
         <>
           <Text style={styles.fieldLabel}>{label}</Text>
-          <Text style={styles.fieldValue}>{formData[field]}</Text>
+          <Text style={[styles.fieldValue, { color: 'black' }]}>{formData[field]}</Text>
         </>
       )}
     </View>
@@ -187,48 +186,41 @@ const ProfileScreen = ({ navigation }) => {
         style={styles.keyboardView}
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Profile</Text>
-            <Text style={styles.subtitle}>Update your personal information</Text>
-            <TouchableOpacity
-              onPress={() => setIsEditing(!isEditing)}
-              style={styles.editButton}
-            >
-              <Text style={styles.editButtonText}>
-                {isEditing ? 'Cancel' : 'Edit'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <View style={styles.profileBox}>
+            <View style={styles.profileImageContainer}>
+              <Image
+                source={require('../assets/logo.png')}
+                style={styles.profileImage}
+              />
+              {isEditing && (
+                <TouchableOpacity style={styles.changePhotoButton}>
+                  <Text style={styles.changePhotoText}>Change Photo</Text>
+                </TouchableOpacity>
+              )}
+            </View>
 
-          <View style={styles.profileImageContainer}>
-            <Image
-              source={require('../assets/logo.png')}
-              style={styles.profileImage}
-            />
-            {isEditing && (
-              <TouchableOpacity style={styles.changePhotoButton}>
-                <Text style={styles.changePhotoText}>Change Photo</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+            {/* Each field in its own box */}
+            {renderField('First Name', 'firstName', 'Enter your first name', 'default', true)}
+            {renderField('Date of Birth', 'dob', 'YYYY-MM-DD', 'default', true)}
+            {renderField('Occupation', 'occupation', 'Enter your occupation', 'default', true)}
+            {renderField('Monthly Income', 'monthlyIncome', 'Enter your monthly income', 'numeric', true)}
+            {renderField('Email', 'email', 'Enter your email', 'email-address', true)}
+            {renderField('Phone Number', 'phoneNumber', 'Enter your phone number', 'phone-pad', true)}
+            {renderField('Preferred Currency', 'preferredCurrency', 'Enter your preferred currency', 'default', true)}
+            {renderField('Language', 'language', 'Enter your preferred language', 'default', true)}
 
-          <View style={styles.form}>
-            {renderField('First Name', 'firstName', 'Enter your first name')}
-            {renderField('Email', 'email', 'Enter your email', 'email-address')}
-            {renderField('Date of Birth', 'dob', 'YYYY-MM-DD')}
-            {renderField('Occupation', 'occupation', 'Enter your occupation')}
-            {renderField('Monthly Income', 'monthlyIncome', 'Enter your monthly income', 'numeric')}
-            {renderField('Phone Number', 'phoneNumber', 'Enter your phone number', 'phone-pad')}
-            {renderField('Address', 'address', 'Enter your address')}
-            {renderField('Preferred Currency', 'preferredCurrency', 'Enter your preferred currency')}
-            {renderField('Language', 'language', 'Enter your preferred language')}
-
-            {isEditing && (
+            {/* Edit/Save button as full-width below all fields */}
+            {!isEditing ? (
               <CustomButton
-                title="Update Profile"
+                title="Edit"
+                onPress={() => setIsEditing(true)}
+                style={styles.fullWidthButton}
+              />
+            ) : (
+              <CustomButton
+                title="Save"
                 onPress={handleSubmit}
-                size="large"
-                style={styles.submitButton}
+                style={styles.fullWidthButton}
               />
             )}
           </View>
@@ -249,11 +241,35 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: spacing.lg,
   },
-  header: {
+  profileBox: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: spacing.lg,
+    marginBottom: spacing.xl,
+    marginTop: spacing.xl,
+    marginHorizontal: spacing.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  profileHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
+  },
+  sectionBox: {
+    backgroundColor: '#f6f8fa',
+    borderRadius: 14,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
   },
   title: {
     fontSize: typography.h1.fontSize,
@@ -289,26 +305,41 @@ const styles = StyleSheet.create({
     color: colors.primary.main,
     fontSize: typography.body.fontSize,
   },
-  form: {
-    flex: 1,
-  },
   fieldContainer: {
     marginBottom: spacing.lg,
   },
   fieldLabel: {
-    fontSize: typography.caption.fontSize,
-    color: colors.text.secondary,
+    fontSize: typography.body.fontSize,
+    color: 'black',
+    fontWeight: 'bold',
     marginBottom: spacing.xs,
   },
   fieldValue: {
     fontSize: typography.body.fontSize,
-    color: colors.text.primary,
-    backgroundColor: colors.background.main,
-    padding: spacing.md,
-    borderRadius: spacing.md,
+    color: 'black',
+    marginBottom: spacing.md,
   },
-  submitButton: {
+  saveButton: {
     marginTop: spacing.xl,
+    backgroundColor: colors.primary.main,
+  },
+  singleFieldBox: {
+    backgroundColor: '#f6f8fa',
+    borderRadius: 14,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  fullWidthButton: {
+    marginTop: spacing.xl,
+    marginHorizontal: 0,
+    width: '100%',
+    alignSelf: 'center',
+    backgroundColor: colors.primary.main,
   },
 });
 

@@ -34,6 +34,15 @@ def add_transaction(user_id):
                 user['purchases'] = []
             new_transaction['purchaseId'] = len(user['purchases'])
             user['purchases'].append(new_transaction)
+            # Update currentBalance
+            try:
+                cost = float(new_transaction.get('purchaseCost', 0))
+                if cost < 0:
+                    user['currentBalance'] = round(float(user['currentBalance']) + cost, 2)
+                else:
+                    user['currentBalance'] = round(float(user['currentBalance']) + cost, 2)
+            except (KeyError, TypeError, ValueError):
+                pass
             break
     else:
         return jsonify({'error': 'User not found'}), 404
@@ -66,7 +75,7 @@ def delete_purchase(user_id):
         data = json.load(f)
 
     for user in data:
-        if user['user_id'] == user_id:
+        if user.get('user_id') == user_id or user.get('userId') == user_id or user.get('id') == user_id:
             purchases = user.get('purchases', [])
             break
     else:
@@ -75,7 +84,8 @@ def delete_purchase(user_id):
     for i, p in enumerate(purchases):
         if p['purchaseId'] == purchase_id:
             try:
-                user['currentBalance'] = round(float(user['currentBalance']) + float(p['purchaseCost']), 2)
+                cost = float(p['purchaseCost'])
+                user['currentBalance'] = round(float(user['currentBalance']) - cost, 2)
             except (KeyError, TypeError, ValueError):
                 return jsonify({'error': 'Invalid or missing purchaseCost value.'}), 400
 

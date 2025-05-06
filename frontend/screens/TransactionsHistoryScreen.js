@@ -10,6 +10,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { colors, spacing, typography } from '../theme/colors';
 import api from '../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { MaterialIcons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 
 
 const TransactionsHistoryScreen = () => {
@@ -33,9 +35,28 @@ const TransactionsHistoryScreen = () => {
     }
   }, []);
 
-  useEffect(() => {
-    fetchTransactions();
-  }, [fetchTransactions]);
+  useFocusEffect(
+    useCallback(() => {
+      console.log('Transactions screen focused, fetching transactions...');
+      fetchTransactions();
+    }, [fetchTransactions])
+  );
+
+  const handleDeleteTransaction = async (purchaseId) => {
+    try {
+      const email = await AsyncStorage.getItem('userEmail');
+      const user = await api.getUserByEmail(email);
+      const userId = user.user_id || user.userId || user.id;
+      if (!userId) {
+        alert('User not found');
+        return;
+      }
+      await api.deleteTransaction(purchaseId, userId);
+      fetchTransactions();
+    } catch (err) {
+      console.error('Error deleting transaction:', err);
+    }
+  };
 
   return (
     <LinearGradient colors={[colors.background.light, colors.primary.light]} style={styles.container}>
@@ -49,7 +70,7 @@ const TransactionsHistoryScreen = () => {
           <Text style={styles.placeholderText}>No transactions yet. Add your first transaction to get started!</Text>
         ) : (
           transactions.map((transaction, idx) => (
-            <View key={idx} style={styles.transactionItem}>
+            <View key={transaction.purchaseId || idx} style={styles.transactionItem}>
               <Text style={styles.transactionTitle}>{transaction.name || 'Transaction'}</Text>
               <View style={styles.transactionDetails}>
                 <Text style={styles.transactionCategory}>{transaction.purchaseCategory}</Text>
@@ -60,6 +81,12 @@ const TransactionsHistoryScreen = () => {
               <Text style={styles.transactionDate}>
                 {transaction.purchaseDate ? new Date(transaction.purchaseDate).toLocaleDateString() : 'No Date'}
               </Text>
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => handleDeleteTransaction(transaction.purchaseId)}
+              >
+                <MaterialIcons name="delete" size={24} color="#fff" />
+              </TouchableOpacity>
             </View>
           ))
         )}
@@ -110,6 +137,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
+    position: 'relative',
   },
   transactionTitle: {
     fontSize: typography.body.fontSize,
@@ -135,6 +163,16 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     fontSize: typography.caption.fontSize,
     textAlign: 'right',
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: colors.error || '#ff4444',
+    borderRadius: 16,
+    padding: 4,
+    zIndex: 10,
+    elevation: 2,
   },
 });
 
