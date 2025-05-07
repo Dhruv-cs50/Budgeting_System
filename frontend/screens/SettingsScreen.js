@@ -1,3 +1,13 @@
+/**
+ * SettingsScreen Component
+ * 
+ * A screen that manages application settings and user preferences.
+ * Provides options for customizing the app experience and accessing
+ * account-related features.
+ * 
+ * @component
+ */
+
 import React, { useState } from 'react';
 import {
   View,
@@ -12,6 +22,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import CustomButton from '../components/common/CustomButton';
 import { colors, spacing, typography } from '../theme/colors';
 
+/**
+ * SettingsScreen component for managing app settings
+ * 
+ * @param {Object} props - Component props
+ * @param {Object} props.navigation - Navigation object for screen navigation
+ * @returns {JSX.Element} SettingsScreen component
+ */
 const SettingsScreen = ({ navigation }) => {
   const [settings, setSettings] = useState({
     notifications: true,
@@ -21,6 +38,9 @@ const SettingsScreen = ({ navigation }) => {
     language: 'English',
   });
 
+  /**
+   * Handles user logout with confirmation dialog
+   */
   const handleLogout = () => {
     Alert.alert(
       'Logout',
@@ -40,6 +60,10 @@ const SettingsScreen = ({ navigation }) => {
     );
   };
 
+  /**
+   * Toggles a boolean setting value
+   * @param {string} setting - Setting name to toggle
+   */
   const handleToggle = (setting) => {
     setSettings(prev => ({
       ...prev,
@@ -47,6 +71,14 @@ const SettingsScreen = ({ navigation }) => {
     }));
   };
 
+  /**
+   * Renders a setting item with appropriate control
+   * @param {string} title - Setting title
+   * @param {any} value - Current setting value
+   * @param {string} type - Control type ('toggle' or 'text')
+   * @param {Function} onPress - Handler for text type settings
+   * @returns {JSX.Element} Setting item component
+   */
   const renderSettingItem = (title, value, type = 'toggle', onPress = null) => {
     return (
       <TouchableOpacity

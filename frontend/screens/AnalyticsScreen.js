@@ -1,3 +1,13 @@
+/**
+ * AnalyticsScreen Component
+ * 
+ * A comprehensive analytics dashboard that visualizes user's financial data
+ * through various charts and metrics. The screen provides insights into
+ * spending patterns, category distribution, and savings progress.
+ * 
+ * @component
+ */
+
 import React, { useState, useCallback } from 'react';
 import {
   View,
@@ -14,6 +24,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
 import { useFocusEffect } from '@react-navigation/native';
 
+/**
+ * Available transaction categories for classification
+ * @constant
+ * @type {string[]}
+ */
 const CATEGORIES = [
   'Food',
   'Transport',
@@ -30,8 +45,18 @@ const { width } = Dimensions.get('window');
 const CHART_WIDTH = width - spacing.lg * 2;
 const CHART_RADIUS = CHART_WIDTH / 2.5;
 
+/**
+ * Month abbreviations for chart labels
+ * @constant
+ * @type {string[]}
+ */
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+/**
+ * Color palette for chart segments
+ * @constant
+ * @type {string[]}
+ */
 const CHART_COLORS = [
   '#FF6B6B', // Red
   '#4ECDC4', // Teal
@@ -44,6 +69,11 @@ const CHART_COLORS = [
   '#FFD3B6', // Orange
 ];
 
+/**
+ * AnalyticsScreen component for displaying financial analytics
+ * 
+ * @returns {JSX.Element} AnalyticsScreen component
+ */
 const AnalyticsScreen = () => {
   const [monthlySpending, setMonthlySpending] = useState([]);
   const [categorySpending, setCategorySpending] = useState([]);
@@ -51,6 +81,11 @@ const AnalyticsScreen = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  /**
+   * Fetches and processes user's financial data for analytics
+   * Processes monthly spending, category spending, and savings data
+   * @async
+   */
   const fetchAndProcessData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -144,6 +179,9 @@ const AnalyticsScreen = () => {
     }
   }, []);
 
+  /**
+   * Effect hook to refresh analytics data when screen comes into focus
+   */
   useFocusEffect(
     useCallback(() => {
       console.log('Analytics screen focused, refreshing data...');
@@ -151,6 +189,10 @@ const AnalyticsScreen = () => {
     }, [fetchAndProcessData])
   );
 
+  /**
+   * Renders the monthly spending bar chart
+   * @returns {JSX.Element|null} Bar chart component or null if no data
+   */
   const renderBarChart = () => {
     if (!monthlySpending.length) return null;
     const maxAmount = Math.max(...monthlySpending.map(item => item.amount), 1);
@@ -172,6 +214,10 @@ const AnalyticsScreen = () => {
     );
   };
 
+  /**
+   * Renders the category spending pie chart
+   * @returns {JSX.Element|null} Pie chart component or null if no data
+   */
   const renderPieChart = () => {
     if (!categorySpending.length) {
       console.log('No category spending data to display');
@@ -184,6 +230,11 @@ const AnalyticsScreen = () => {
 
     let startAngle = -Math.PI / 2; // Start from top (12 o'clock position)
     
+    /**
+     * Creates SVG path data for a pie chart segment
+     * @param {number} amount - The amount for this segment
+     * @returns {string} SVG path data
+     */
     const createPieSegment = (amount) => {
       const percentage = (amount / total) * 100;
       console.log('Creating segment:', { amount, percentage, startAngle });
@@ -207,7 +258,6 @@ const AnalyticsScreen = () => {
         'Z'
       ].join(' ');
       
-      // Update start angle for next segment
       startAngle = endAngle;
       
       return pathData;
@@ -257,6 +307,10 @@ const AnalyticsScreen = () => {
     );
   };
 
+  /**
+   * Renders the savings progress card
+   * @returns {JSX.Element} Savings card component
+   */
   const renderSavingsCard = () => {
     const progress = savings.goal ? (savings.current / savings.goal) * 100 : 0;
     return (

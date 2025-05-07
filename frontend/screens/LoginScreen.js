@@ -1,3 +1,13 @@
+/**
+ * LoginScreen Component
+ * 
+ * The login screen of the application that handles user authentication.
+ * This screen provides a form for users to enter their credentials and
+ * includes validation, error handling, and navigation to other auth screens.
+ * 
+ * @component
+ */
+
 import React, { useState } from 'react';
 import {
   View,
@@ -15,23 +25,43 @@ import CustomButton from '../components/common/CustomButton';
 import { colors, spacing, typography } from '../theme/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-//mock credentials
+/**
+ * Mock credentials for testing purposes
+ * @type {{email: string, password: string}}
+ */
 const MOCK_CREDENTIALS = {
   email: 'test@example.com',
   password: 'password123'
 };
 
+/**
+ * LoginScreen component for user authentication
+ * 
+ * @param {Object} props - Component props
+ * @param {Object} props.navigation - Navigation object from React Navigation
+ * @returns {JSX.Element} LoginScreen component
+ */
 const LoginScreen = ({ navigation }) => {
-  const [email, setEmail] = useState(MOCK_CREDENTIALS.email); //pre filled data
-  const [password, setPassword] = useState(MOCK_CREDENTIALS.password); //pre filled data for testing
+  const [email, setEmail] = useState(MOCK_CREDENTIALS.email);
+  const [password, setPassword] = useState(MOCK_CREDENTIALS.password);
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
+  /**
+   * Validates email format using regex
+   * @param {string} email - Email address to validate
+   * @returns {boolean} Whether the email is valid
+   */
   const validateEmail = (email) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email);
   };
 
+  /**
+   * Handles the login process
+   * Validates inputs, makes API request, and handles authentication
+   * @async
+   */
   const handleLogin = async () => {
     let isValid = true;
     setEmailError('');

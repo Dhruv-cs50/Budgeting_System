@@ -1,3 +1,13 @@
+/**
+ * TransactionsHistoryScreen Component
+ * 
+ * A screen that displays the user's complete transaction history.
+ * This screen shows all transactions in chronological order with the ability
+ * to delete individual transactions.
+ * 
+ * @component
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -13,12 +23,21 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
-
+/**
+ * TransactionsHistoryScreen component for displaying transaction history
+ * 
+ * @returns {JSX.Element} TransactionsHistoryScreen component
+ */
 const TransactionsHistoryScreen = () => {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  /**
+   * Fetches all transactions for the current user
+   * Sorts transactions by date (newest first)
+   * @async
+   */
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -35,6 +54,9 @@ const TransactionsHistoryScreen = () => {
     }
   }, []);
 
+  /**
+   * Effect hook to fetch transactions when screen comes into focus
+   */
   useFocusEffect(
     useCallback(() => {
       console.log('Transactions screen focused, fetching transactions...');
@@ -42,6 +64,11 @@ const TransactionsHistoryScreen = () => {
     }, [fetchTransactions])
   );
 
+  /**
+   * Handles the deletion of a transaction
+   * @param {number} purchaseId - ID of the transaction to delete
+   * @async
+   */
   const handleDeleteTransaction = async (purchaseId) => {
     try {
       const email = await AsyncStorage.getItem('userEmail');

@@ -1,3 +1,13 @@
+/**
+ * AddGoalScreen Component
+ * 
+ * A screen that allows users to create new financial goals.
+ * Provides a form for entering goal details including title, target amount,
+ * current amount, deadline, and optional description.
+ * 
+ * @component
+ */
+
 import React, { useState } from 'react';
 import {
   View,
@@ -13,6 +23,13 @@ import CustomInput from '../components/common/CustomInput';
 import CustomButton from '../components/common/CustomButton';
 import { colors, spacing, typography } from '../theme/colors';
 
+/**
+ * AddGoalScreen component for creating new financial goals
+ * 
+ * @param {Object} props - Component props
+ * @param {Object} props.navigation - Navigation object for screen navigation
+ * @returns {JSX.Element} AddGoalScreen component
+ */
 const AddGoalScreen = ({ navigation }) => {
   const [formData, setFormData] = useState({
     title: '',
@@ -23,6 +40,10 @@ const AddGoalScreen = ({ navigation }) => {
   });
   const [errors, setErrors] = useState({});
 
+  /**
+   * Validates the form data and sets error messages
+   * @returns {boolean} True if form is valid, false otherwise
+   */
   const validateForm = () => {
     const newErrors = {};
     if (!formData.title) {
@@ -49,6 +70,11 @@ const AddGoalScreen = ({ navigation }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  /**
+   * Handles changes to form input fields
+   * @param {string} field - Field name to update
+   * @param {string} value - New value for the field
+   */
   const handleChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
@@ -62,6 +88,10 @@ const AddGoalScreen = ({ navigation }) => {
     }
   };
 
+  /**
+   * Handles form submission and creates a new goal
+   * @async
+   */
   const handleSubmit = async () => {
     if (validateForm()) {
       const dataToSend = {

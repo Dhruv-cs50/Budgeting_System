@@ -1,3 +1,24 @@
+/**
+ * Budgeting System Frontend Application
+ * 
+ * This is the main entry point for the Budgeting System React Native application.
+ * It sets up the navigation structure and defines the main screens of the app.
+ * 
+ * Navigation Structure:
+ * - Stack Navigator (Main navigation)
+ *   - Welcome Screen (Initial screen)
+ *   - Login Screen
+ *   - Register Screen
+ *   - Main Tabs (Bottom tab navigation)
+ *     - Home Screen
+ *     - Transactions Screen
+ *     - Analytics Screen
+ *     - Goals Screen
+ *     - Profile Screen
+ *   - Add Transaction Screen (Modal)
+ * 
+ */
+
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -19,6 +40,14 @@ import ProfileScreen from './screens/ProfileScreen';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
+/**
+ * MainTabs Component
+ * 
+ * Defines the bottom tab navigation structure for the main app screens.
+ * Each tab represents a major feature of the application.
+ * 
+ * @returns {JSX.Element} Bottom tab navigator with configured screens
+ */
 const MainTabs = () => {
   return (
     <Tab.Navigator
@@ -74,6 +103,14 @@ const MainTabs = () => {
   );
 };
 
+/**
+ * App Component
+ * 
+ * The root component of the application that sets up the navigation container
+ * and defines the main stack navigation structure.
+ * 
+ * @returns {JSX.Element} Navigation container with configured stack navigator
+ */
 export default function App() {
   return (
     <NavigationContainer>

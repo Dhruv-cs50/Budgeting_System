@@ -1,3 +1,12 @@
+/**
+ * ProfileScreen Component
+ * 
+ * A screen that displays and manages user profile information.
+ * Users can view their profile details and edit them when needed.
+ * 
+ * @component
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -15,6 +24,13 @@ import CustomInput from '../components/common/CustomInput';
 import CustomButton from '../components/common/CustomButton';
 import { colors, spacing, typography } from '../theme/colors';
 
+/**
+ * ProfileScreen component for managing user profile
+ * 
+ * @param {Object} props - Component props
+ * @param {Object} props.navigation - Navigation object for screen navigation
+ * @returns {JSX.Element} ProfileScreen component
+ */
 const ProfileScreen = ({ navigation }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -30,6 +46,9 @@ const ProfileScreen = ({ navigation }) => {
   });
   const [errors, setErrors] = useState({});
 
+  /**
+   * Effect hook to fetch user profile data
+   */
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -57,6 +76,10 @@ const ProfileScreen = ({ navigation }) => {
     fetchProfile();
   }, []);
 
+  /**
+   * Validates the form data and sets error messages
+   * @returns {boolean} True if form is valid, false otherwise
+   */
   const validateForm = () => {
     const newErrors = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -108,6 +131,11 @@ const ProfileScreen = ({ navigation }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  /**
+   * Handles changes to form input fields
+   * @param {string} field - Field name to update
+   * @param {string} value - New value for the field
+   */
   const handleChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
@@ -121,6 +149,10 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
+  /**
+   * Handles form submission and updates user profile
+   * @async
+   */
   const handleSubmit = async () => {
     if (validateForm()) {
       const dataToSend = {
@@ -156,6 +188,15 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
+  /**
+   * Renders a form field with label and input or display value
+   * @param {string} label - Field label
+   * @param {string} field - Field name in formData
+   * @param {string} placeholder - Input placeholder text
+   * @param {string} keyboardType - Keyboard type for input
+   * @param {boolean} box - Whether to render in a box container
+   * @returns {JSX.Element} Form field component
+   */
   const renderField = (label, field, placeholder, keyboardType = 'default', box = false) => (
     <View style={box ? styles.singleFieldBox : styles.fieldContainer}>
       {isEditing ? (

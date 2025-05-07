@@ -1,3 +1,13 @@
+/**
+ * CustomInput Component
+ * 
+ * A reusable text input component with label and error handling capabilities.
+ * This component provides a consistent look and feel across the application
+ * and includes built-in styling for various states (normal, error).
+ * 
+ * @component
+ */
+
 import React from 'react';
 import { View, TextInput, Text, StyleSheet } from 'react-native';
 import { colors, spacing, typography, borderRadius } from '../../theme/colors';

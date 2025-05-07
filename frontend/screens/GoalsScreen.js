@@ -1,3 +1,12 @@
+/**
+ * GoalsScreen Component
+ * 
+ * A screen that manages and displays user's financial goals.
+ * Users can view their existing goals, track progress, and add new goals.
+ * 
+ * @component
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -14,8 +23,19 @@ import { colors, spacing, typography } from '../theme/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 
+/**
+ * Backend API URL for data persistence
+ * @constant
+ * @type {string}
+ */
 const BACKEND_URL = 'http://192.168.55.153:5001';
 
+/**
+ * Retrieves user ID by email from the backend
+ * @param {string} email - User's email address
+ * @returns {Promise<string>} User ID
+ * @throws {Error} If user is not found
+ */
 const getUserIdByEmail = async (email) => {
   const res = await fetch(`${BACKEND_URL}/users/email/${encodeURIComponent(email)}`);
   if (!res.ok) throw new Error('User not found');
@@ -23,6 +43,11 @@ const getUserIdByEmail = async (email) => {
   return user.user_id || user.userId;
 };
 
+/**
+ * GoalsScreen component for managing financial goals
+ * 
+ * @returns {JSX.Element} GoalsScreen component
+ */
 const GoalsScreen = () => {
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const [isAddingGoal, setIsAddingGoal] = useState(false);
@@ -34,6 +59,10 @@ const GoalsScreen = () => {
   });
   const [goals, setGoals] = useState([]);
 
+  /**
+   * Fetches user's financial goals from the backend
+   * @async
+   */
   const fetchGoals = async () => {
     try {
       const email = await AsyncStorage.getItem('userEmail');
@@ -51,12 +80,20 @@ const GoalsScreen = () => {
     }
   };
 
+  /**
+   * Effect hook to fetch goals when screen comes into focus
+   */
   useFocusEffect(
     useCallback(() => {
       fetchGoals();
     }, [])
   );
 
+  /**
+   * Formats a date string into a localized format
+   * @param {string} dateString - Date string to format
+   * @returns {string} Formatted date string
+   */
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -66,10 +103,20 @@ const GoalsScreen = () => {
     });
   };
 
+  /**
+   * Calculates progress percentage for a goal
+   * @param {number} current - Current amount
+   * @param {number} target - Target amount
+   * @returns {number} Progress percentage
+   */
   const calculateProgress = (current, target) => {
     return (current / target) * 100;
   };
 
+  /**
+   * Handles date selection from the date picker
+   * @param {Date} date - Selected date
+   */
   const handleDateConfirm = (date) => {
     const minDate = new Date('2025-04-28');
     if (date < minDate) {
@@ -86,6 +133,10 @@ const GoalsScreen = () => {
     setDatePickerVisible(false);
   };
 
+  /**
+   * Handles the creation of a new financial goal
+   * @async
+   */
   const handleAddGoal = async () => {
     try {
       const email = await AsyncStorage.getItem('userEmail');
@@ -123,6 +174,11 @@ const GoalsScreen = () => {
     }
   };
 
+  /**
+   * Renders a goal card with progress information
+   * @param {Object} goal - Goal object containing title, amounts, and dates
+   * @returns {JSX.Element} Goal card component
+   */
   const renderGoalCard = (goal) => {
     const progress = calculateProgress(goal.currentAmount, goal.targetAmount);
     
@@ -163,6 +219,10 @@ const GoalsScreen = () => {
     );
   };
 
+  /**
+   * Renders the add goal form or add button
+   * @returns {JSX.Element} Form or button component
+   */
   const renderAddGoalForm = () => {
     if (!isAddingGoal) {
       return (

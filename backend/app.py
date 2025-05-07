@@ -1,3 +1,23 @@
+"""
+Budgeting System Backend Application
+
+This module serves as the main entry point for the Budgeting System backend.
+It initializes the Flask application and registers all the route blueprints.
+The application provides RESTful APIs for managing users, transactions, and financial goals.
+
+Dependencies:
+    - Flask: Web framework
+    - Flask-CORS: Cross-Origin Resource Sharing support
+    - json: JSON data handling
+    - urllib.parse: URL encoding/decoding
+
+Routes:
+    - /: Health check endpoint
+    - /users: User management endpoints
+    - /users/email/<email>: User operations by email
+    - /users/<user_id>/goals: Financial goals management
+"""
+
 from routes import all_users
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -8,6 +28,7 @@ import urllib.parse
 app = Flask(__name__)
 CORS(app)
 
+# Register all route blueprints
 app.register_blueprint(all_users.all_users_bp)
 print("Users_bp works")
 app.register_blueprint(user.user_bp)
@@ -21,16 +42,37 @@ print("Transactions_bp works")
 
 @app.route('/')
 def home():
+    """
+    Health check endpoint.
+    
+    Returns:
+        str: A message indicating the server is running
+    """
     return "Server is running!!"
 
 @app.route('/users', methods=['GET'])
 def get_all_users():
+    """
+    Retrieve all users from the system.
+    
+    Returns:
+        JSON: List of all users in the system
+    """
     with open('data.json') as f:
         users = json.load(f)
     return jsonify(users)
 
 @app.route('/users/email/<email>', methods=['GET'])
 def get_user_by_email(email):
+    """
+    Retrieve a user by their email address.
+    
+    Args:
+        email (str): The email address of the user to find
+        
+    Returns:
+        JSON: User data if found, error message if not found
+    """
     decoded_email = urllib.parse.unquote(email)
     with open('data.json') as f:
         users = json.load(f)
@@ -41,6 +83,15 @@ def get_user_by_email(email):
 
 @app.route('/users/email/<email>', methods=['PATCH'])
 def update_user_by_email(email):
+    """
+    Update user information by email address.
+    
+    Args:
+        email (str): The email address of the user to update
+        
+    Returns:
+        JSON: Success message if updated, error message if not found
+    """
     decoded_email = urllib.parse.unquote(email)
     update_data = request.json
     print("PATCH update for:", decoded_email, update_data) 
@@ -64,6 +115,16 @@ def update_user_by_email(email):
 
 @app.route('/users/<int:user_id>/goals/<int:goal_id>', methods=['PATCH'])
 def update_goal_amount(user_id, goal_id):
+    """
+    Update the current amount of a specific financial goal.
+    
+    Args:
+        user_id (int): The ID of the user
+        goal_id (int): The ID of the goal to update
+        
+    Returns:
+        JSON: Updated goal data if successful, error message if not found
+    """
     update_data = request.json
     amount_to_add = update_data.get('amountToAdd')
     print(f"PATCH /users/{user_id}/goals/{goal_id} with amountToAdd={amount_to_add}")
@@ -90,6 +151,15 @@ def update_goal_amount(user_id, goal_id):
 
 @app.route('/users/<int:user_id>/goals', methods=['POST'])
 def add_goal(user_id):
+    """
+    Add a new financial goal for a user.
+    
+    Args:
+        user_id (int): The ID of the user to add the goal for
+        
+    Returns:
+        JSON: The newly created goal data if successful, error message if user not found
+    """
     new_goal = request.json
     with open('data.json', 'r') as f:
         users = json.load(f)
@@ -109,6 +179,15 @@ def add_goal(user_id):
 
 @app.route('/users/<int:user_id>/goals', methods=['GET'])
 def get_goals(user_id):
+    """
+    Retrieve all financial goals for a specific user.
+    
+    Args:
+        user_id (int): The ID of the user whose goals to retrieve
+        
+    Returns:
+        JSON: List of goals if user found, error message if not found
+    """
     with open('data.json', 'r') as f:
         users = json.load(f)
     for user in users:

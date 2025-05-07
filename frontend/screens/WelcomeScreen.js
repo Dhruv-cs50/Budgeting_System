@@ -1,3 +1,12 @@
+/**
+ * WelcomeScreen Component
+ * 
+ * The initial screen of the application that displays an onboarding carousel.
+ * This screen introduces users to the main features of the budgeting app through
+ * a series of slides with images and descriptions.
+ * @component
+ */
+
 import React, { useState } from 'react';
 import {
   View,
@@ -13,6 +22,10 @@ import { colors, spacing, typography } from '../theme/colors';
 
 const { width } = Dimensions.get('window');
 
+/**
+ * Onboarding slides data
+ * @type {Array<{id: number, title: string, description: string, image: any}>}
+ */
 const slides = [
   {
     id: 1,
@@ -34,9 +47,20 @@ const slides = [
   },
 ];
 
+/**
+ * WelcomeScreen component for onboarding users
+ * 
+ * @param {Object} props - Component props
+ * @param {Object} props.navigation - Navigation object from React Navigation
+ * @returns {JSX.Element} WelcomeScreen component
+ */
 const WelcomeScreen = ({ navigation }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
 
+  /**
+   * Handles the next button press
+   * Advances to the next slide or navigates to Login screen if on last slide
+   */
   const handleNext = () => {
     if (currentSlide < slides.length - 1) {
       setCurrentSlide(currentSlide + 1);
@@ -45,6 +69,10 @@ const WelcomeScreen = ({ navigation }) => {
     }
   };
 
+  /**
+   * Handles the skip button press
+   * Navigates directly to the Login screen
+   */
   const handleSkip = () => {
     navigation.navigate('Login');
   };

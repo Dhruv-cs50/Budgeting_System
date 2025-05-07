@@ -1,3 +1,13 @@
+/**
+ * AddTransactionScreen Component
+ * 
+ * A screen that allows users to add new financial transactions.
+ * Supports both income and expense transactions with different fields
+ * and validation rules for each type.
+ * 
+ * @component
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -18,6 +28,11 @@ import api from '../services/api';
 import { useFocusEffect } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
 
+/**
+ * Available transaction categories
+ * @constant
+ * @type {string[]}
+ */
 const categories = [
   'Food',
   'Transport',
@@ -30,12 +45,24 @@ const categories = [
   'Other',
 ];
 
+/**
+ * Mock financial goals for testing
+ * @constant
+ * @type {Array<{id: number, title: string}>}
+ */
 const mockGoals = [
   { id: 1, title: 'Emergency Fund' },
   { id: 2, title: 'New Car' },
   { id: 3, title: 'Vacation' },
 ];
 
+/**
+ * AddTransactionScreen component for adding new transactions
+ * 
+ * @param {Object} props - Component props
+ * @param {Object} props.navigation - Navigation object for screen navigation
+ * @returns {JSX.Element} AddTransactionScreen component
+ */
 const AddTransactionScreen = ({ navigation }) => {
   const [formData, setFormData] = useState({
     amount: '',
@@ -49,6 +76,9 @@ const AddTransactionScreen = ({ navigation }) => {
   const [selectedGoalId, setSelectedGoalId] = useState('');
   const [goals, setGoals] = useState([]);
 
+  /**
+   * Effect hook to fetch user's financial goals
+   */
   useEffect(() => {
     const fetchGoals = async () => {
       try {
@@ -63,6 +93,10 @@ const AddTransactionScreen = ({ navigation }) => {
     fetchGoals();
   }, []);
 
+  /**
+   * Validates the form data and sets error messages
+   * @returns {boolean} True if form is valid, false otherwise
+   */
   const validateForm = () => {
     const newErrors = {};
     if (!formData.amount) {
@@ -80,6 +114,11 @@ const AddTransactionScreen = ({ navigation }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  /**
+   * Handles changes to form input fields
+   * @param {string} field - Field name to update
+   * @param {string} value - New value for the field
+   */
   const handleChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
@@ -93,6 +132,10 @@ const AddTransactionScreen = ({ navigation }) => {
     }
   };
 
+  /**
+   * Handles date selection from the date picker
+   * @param {Date} date - Selected date
+   */
   const handleDateConfirm = (date) => {
     setFormData(prev => ({
       ...prev,
@@ -101,6 +144,10 @@ const AddTransactionScreen = ({ navigation }) => {
     setDatePickerVisible(false);
   };
 
+  /**
+   * Handles form submission and creates a new transaction
+   * @async
+   */
   const handleSubmit = async () => {
     if (validateForm()) {
       try {
@@ -270,7 +317,7 @@ const AddTransactionScreen = ({ navigation }) => {
               onPress={() => setDatePickerVisible(true)}
             >
               <Text style={styles.dateButtonText}>
-                {formData.date}
+                {formData.date ? new Date(formData.date).toLocaleDateString() : 'Select Date'}
               </Text>
             </TouchableOpacity>
 
@@ -284,40 +331,22 @@ const AddTransactionScreen = ({ navigation }) => {
             />
 
             {formData.type === 'income' && (
-              <View style={{ marginBottom: spacing.lg }}>
-                <Text style={styles.label}>Assign to Goal (optional)</Text>
-                <TouchableOpacity
-                  style={{
-                    padding: spacing.md,
-                    backgroundColor: selectedGoalId === '' ? colors.primary.light : colors.background.dark,
-                    borderRadius: spacing.md,
-                    marginBottom: spacing.sm,
-                  }}
-                  onPress={() => setSelectedGoalId('')}
+              <View style={styles.goalSelector}>
+                <Text style={styles.label}>Assign to Goal (Optional)</Text>
+                <Picker
+                  selectedValue={selectedGoalId}
+                  onValueChange={(value) => setSelectedGoalId(value)}
+                  style={styles.picker}
                 >
-                  <Text style={{ color: selectedGoalId === '' ? colors.text.light : colors.text.primary }}>
-                    -- None --
-                  </Text>
-                </TouchableOpacity>
-                {goals.map(goal => (
-                  <TouchableOpacity
-                    key={goal.goalId}
-                    style={{
-                      padding: spacing.md,
-                      backgroundColor: selectedGoalId === goal.goalId ? colors.primary.light : colors.background.dark,
-                      borderRadius: spacing.md,
-                      marginBottom: spacing.sm,
-                    }}
-                    onPress={() => {
-                      console.log('Button selected value:', goal.goalId);
-                      setSelectedGoalId(goal.goalId);
-                    }}
-                  >
-                    <Text style={{ color: selectedGoalId === goal.goalId ? colors.text.light : colors.text.primary }}>
-                      {goal.title}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                  <Picker.Item label="None" value="" />
+                  {goals.map((goal) => (
+                    <Picker.Item
+                      key={goal.id}
+                      label={goal.title}
+                      value={goal.id.toString()}
+                    />
+                  ))}
+                </Picker>
               </View>
             )}
 
@@ -442,6 +471,13 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: spacing.xl,
+  },
+  goalSelector: {
+    marginBottom: spacing.lg,
+  },
+  picker: {
+    width: '100%',
+    height: 50,
   },
 });
 

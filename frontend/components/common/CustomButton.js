@@ -1,3 +1,13 @@
+/**
+ * CustomButton Component
+ * 
+ * A reusable button component with multiple variants and sizes.
+ * This component provides a consistent look and feel across the application
+ * and includes built-in support for loading states and disabled states.
+ * 
+ * @component
+ */
+
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { colors, spacing, typography, borderRadius } from '../../theme/colors';
@@ -12,6 +22,10 @@ const CustomButton = ({
   style,
   textStyle,
 }) => {
+  /**
+   * Get the appropriate button style based on variant
+   * @returns {Object} Style object for the button variant
+   */
   const getButtonStyle = () => {
     switch (variant) {
       case 'primary':
@@ -25,6 +39,10 @@ const CustomButton = ({
     }
   };
 
+  /**
+   * Get the appropriate button size style
+   * @returns {Object} Style object for the button size
+   */
   const getButtonSize = () => {
     switch (size) {
       case 'small':

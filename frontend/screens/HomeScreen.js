@@ -1,3 +1,12 @@
+/**
+ * HomeScreen Component
+ * 
+ * The main dashboard screen of the application that displays user's financial overview.
+ * This screen shows current balance, monthly budget, spending categories, and recent transactions.
+ * 
+ * @component
+ */
+
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
@@ -19,6 +28,10 @@ import api, { API_BASE_URL } from '../services/api';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+/**
+ * Available transaction categories
+ * @type {string[]}
+ */
 const CATEGORIES = [
   'Food',
   'Transport',
@@ -31,6 +44,13 @@ const CATEGORIES = [
   'Other',
 ];
 
+/**
+ * HomeScreen component for financial dashboard
+ * 
+ * @param {Object} props - Component props
+ * @param {Object} props.navigation - Navigation object from React Navigation
+ * @returns {JSX.Element} HomeScreen component
+ */
 const HomeScreen = ({ navigation }) => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -42,6 +62,11 @@ const HomeScreen = ({ navigation }) => {
   const [editBudgetVisible, setEditBudgetVisible] = useState(false);
   const [newBudget, setNewBudget] = useState('');
 
+  /**
+   * Fetches user data and calculates financial metrics
+   * @param {string} email - User's email address
+   * @async
+   */
   const fetchUserDataByEmail = useCallback(async (email) => {
     setLoading(true);
     setError(null);
@@ -90,6 +115,9 @@ const HomeScreen = ({ navigation }) => {
     }
   }, []);
 
+  /**
+   * Effect hook to fetch user data when screen comes into focus
+   */
   useFocusEffect(
     useCallback(() => {
       const getUserEmailAndFetch = async () => {
@@ -106,11 +134,18 @@ const HomeScreen = ({ navigation }) => {
     }, [fetchUserDataByEmail])
   );
 
+  /**
+   * Opens the balance edit modal
+   */
   const handleEditBalance = () => {
     setNewBalance(userData.balance?.toString() || '');
     setEditBalanceVisible(true);
   };
 
+  /**
+   * Saves the updated balance to the server
+   * @async
+   */
   const handleSaveBalance = async () => {
     try {
       const email = await AsyncStorage.getItem('userEmail');
@@ -126,11 +161,18 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
+  /**
+   * Opens the budget edit modal
+   */
   const handleEditBudget = () => {
     setNewBudget(userData.monthlyBudget?.toString() || '');
     setEditBudgetVisible(true);
   };
 
+  /**
+   * Saves the updated monthly budget to the server
+   * @async
+   */
   const handleSaveBudget = async () => {
     const parsedBudget = parseFloat(newBudget);
     if (isNaN(parsedBudget)) {
@@ -169,6 +211,11 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
+  /**
+   * Renders a single transaction item
+   * @param {Object} transaction - Transaction data object
+   * @returns {JSX.Element} Transaction item component
+   */
   const renderTransactionItem = (transaction) => (
     <TouchableOpacity
       key={transaction.id}
@@ -193,6 +240,11 @@ const HomeScreen = ({ navigation }) => {
     </TouchableOpacity>
   );
 
+  /**
+   * Renders a single spending category item
+   * @param {Object} category - Category data object
+   * @returns {JSX.Element} Category item component
+   */
   const renderCategoryItem = (category) => (
     <View key={category.name} style={styles.categoryItem}>
       <View style={styles.categoryHeader}>

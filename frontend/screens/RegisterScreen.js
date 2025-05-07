@@ -1,3 +1,13 @@
+/**
+ * RegisterScreen Component
+ * 
+ * The registration screen of the application that handles new user sign-up.
+ * This screen provides a comprehensive form for users to create their account
+ * with personal and financial information.
+ * 
+ * @component
+ */
+
 import React, { useState } from 'react';
 import {
   View,
@@ -14,12 +24,23 @@ import CustomInput from '../components/common/CustomInput';
 import CustomButton from '../components/common/CustomButton';
 import { colors, spacing, typography } from '../theme/colors';
 
+/**
+ * Test account credentials for development purposes
+ * @type {{name: string, email: string, password: string}}
+ */
 const TEST_ACCOUNT = {
   name: 'Test User',
   email: 'test@example.com',
   password: 'password123'
 };
 
+/**
+ * RegisterScreen component for new user registration
+ * 
+ * @param {Object} props - Component props
+ * @param {Object} props.navigation - Navigation object from React Navigation
+ * @returns {JSX.Element} RegisterScreen component
+ */
 const RegisterScreen = ({ navigation }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -37,6 +58,10 @@ const RegisterScreen = ({ navigation }) => {
   });
   const [errors, setErrors] = useState({});
 
+  /**
+   * Validates all form fields and sets error messages
+   * @returns {boolean} Whether the form is valid
+   */
   const validateForm = () => {
     const newErrors = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -67,6 +92,11 @@ const RegisterScreen = ({ navigation }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  /**
+   * Updates form data and clears field-specific errors
+   * @param {string} field - Field name to update
+   * @param {string} value - New value for the field
+   */
   const handleChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
@@ -80,6 +110,11 @@ const RegisterScreen = ({ navigation }) => {
     }
   };
 
+  /**
+   * Handles the registration process
+   * Validates form data and makes API request to create new user
+   * @async
+   */
   const handleRegister = async () => {
     if (validateForm()) {
       const dataToSend = {
@@ -121,6 +156,9 @@ const RegisterScreen = ({ navigation }) => {
     }
   };
 
+  /**
+   * Fills the form with test account credentials
+   */
   const handleUseTestAccount = () => {
     setFormData({
       name: TEST_ACCOUNT.name,

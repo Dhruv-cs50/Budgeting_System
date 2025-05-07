@@ -1,3 +1,10 @@
+"""
+Transactions Module
+
+This module defines routes for managing transaction records in the budgeting application.
+It provides endpoints to add new transactions and retrieve transaction history.
+"""
+
 from flask import Blueprint, request, jsonify
 import json
 import os
@@ -9,6 +16,21 @@ DATA_FILE = 'data.json'
 
 @transactions_bp.route('/', methods=['POST'])
 def add_transaction():
+    """
+    Add a new transaction to the system.
+    
+    Expected JSON in request body:
+    {
+        "userId": int,
+        "amount": float,
+        "type": str,  # "deposit" or "purchase"
+        "description": str,
+        "category": str
+    }
+    
+    Returns:
+        JSON: Success message and 201 status code if successful
+    """
     transaction = request.json
 
     if not os.path.exists(DATA_FILE):
@@ -28,6 +50,12 @@ def add_transaction():
 
 @transactions_bp.route('/', methods=['GET'])
 def get_transactions():
+    """
+    Retrieve all transactions from the system.
+    
+    Returns:
+        JSON: List of all transactions, or empty list if no transactions exist
+    """
     if not os.path.exists(DATA_FILE):
         return jsonify([]), 200
     with open(DATA_FILE, 'r') as f:
